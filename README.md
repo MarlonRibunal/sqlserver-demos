@@ -1,18 +1,79 @@
 # SQL Server demo scripts
 
-One folder per topic. Each folder is self-contained and has its own README with
-run order and prerequisites.
+Self-contained, runnable demonstrations of SQL Server behaviour — one folder per
+topic. Each folder has its own README with prerequisites, run order, and what to
+expect in the output.
 
-| Topic | Folder | Sample database |
-|-------|--------|-----------------|
-| Parameter sniffing, `RECOMPILE`, memory grant feedback | [`parameter-sniffing/`](parameter-sniffing/) | WideWorldImporters |
+## Topics
 
-## Conventions
+| Topic | Sample database | Min. version | Status |
+|---|---|---|---|
+| [Parameter sniffing, `RECOMPILE`, memory grant feedback](parameter-sniffing/) | WideWorldImporters | 2017 (2019+ for full effect) | ⚠️ Untested |
 
-- Scripts are numbered in run order: `01-setup.sql`, `02-demo.sql`,
-  `03-cleanup.sql`.
-- Setup and demo are always separate. Setup builds objects and runs no demo;
-  the demo script runs unattended and records its own evidence.
-- Everything is created inside a `Demo` schema so cleanup can drop it wholesale.
-- Any setting a setup script changes is recorded first and restored by cleanup.
-- `sp_recompile`, never `DBCC FREEPROCCACHE`.
+**Status** is honest about whether the scripts have actually been run:
+✅ verified on the listed version · ⚠️ untested, run on a scratch instance first.
+
+## How these are built
+
+Every topic follows the same shape, so once you've run one you know how to run
+the rest.
+
+**Numbered scripts, run in order.**
+
+```
+01-setup.sql     builds objects and loads data. Runs no demo of its own.
+02-demo.sql      the demonstration. Run the whole file — never step through it.
+03-cleanup.sql   restores anything setup changed, then drops everything.
+```
+
+**Setup and demo are always separate**, so it's never ambiguous which script to
+run when, and so you can re-run a demo without rebuilding its data.
+
+**Demos run unattended.** A demo script captures its own evidence — into a
+results table, an Extended Events session, or both — and prints a summary at the
+end. You should not have to sit there reading execution plans between
+executions to see the point.
+
+**Everything lives in a `Demo` schema** so cleanup can drop it wholesale without
+touching the sample database.
+
+**Setup records what it changes.** If a script alters a compatibility level, a
+scoped configuration, or a server setting, it saves the original value first and
+cleanup puts it back. Each topic README states plainly what its setup mutates.
+
+**Object-scoped cache operations only** — `sp_recompile`, never
+`DBCC FREEPROCCACHE`. Nothing here flushes an entire instance's plan cache.
+
+**Nothing runs against production.** Several topics change database-level
+settings by design. Use a scratch instance.
+
+## Adding a topic
+
+1. Create `<topic-name>/` — kebab-case, named for the behaviour being
+   demonstrated, not the fix.
+2. Add `01-setup.sql`, `02-demo.sql`, `03-cleanup.sql` following the conventions
+   above. Split further only if a topic genuinely needs it (`02a`, `02b`).
+3. Write `<topic-name>/README.md` covering: prerequisites, run order with rough
+   timings, what each scenario shows, what setup changes on the database, and
+   how to read the output.
+4. Add a row to the **Topics** table above with an honest status.
+5. Note any client-specific requirements (SSMS settings, sqlcmd fallbacks) in
+   the topic README — not everyone runs SSMS.
+
+## Sample databases
+
+Topics use Microsoft's published sample databases rather than synthetic data
+where possible. Individual READMEs link to the download and give the restore
+command.
+
+| Database | Source |
+|---|---|
+| WideWorldImporters | [sql-server-samples releases](https://github.com/microsoft/sql-server-samples/releases/tag/wide-world-importers-v1.0) |
+
+Backups are gitignored — download them yourself rather than expecting them here.
+
+Where a sample database won't reproduce the behaviour on its own (WideWorldImporters
+is generated with near-uniform distributions, so it can't show data skew), the
+setup script manufactures the conditions **deliberately and says so** in
+comments. A demo that admits what it constructed is worth more than one claiming
+to have found it in the wild.
