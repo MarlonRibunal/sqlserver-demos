@@ -6,12 +6,9 @@ expect in the output.
 
 ## Topics
 
-| Topic | Sample database | Min. version | Status |
-|---|---|---|---|
-| [Parameter sniffing, `RECOMPILE`, memory grant feedback](parameter-sniffing/) | WideWorldImporters | 2017 (2019+ for full effect) | ⚠️ Untested |
-
-**Status** is honest about whether the scripts have actually been run:
-✅ verified on the listed version · ⚠️ untested, run on a scratch instance first.
+| Topic | Sample database | Min. version |
+|---|---|---|
+| [Parameter sniffing, `RECOMPILE`, memory grant feedback](parameter-sniffing/) | WideWorldImporters | 2017 (2019+ for full effect) |
 
 ## How these are built
 
@@ -56,7 +53,7 @@ settings by design. Use a scratch instance.
 3. Write `<topic-name>/README.md` covering: prerequisites, run order with rough
    timings, what each scenario shows, what setup changes on the database, and
    how to read the output.
-4. Add a row to the **Topics** table above with an honest status.
+4. Add a row to the **Topics** table above.
 5. Note any client-specific requirements (SSMS settings, sqlcmd fallbacks) in
    the topic README — not everyone runs SSMS.
 
