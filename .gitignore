@@ -1,0 +1,9 @@
+# Sample database backups — download these from Microsoft, don't commit them
+*.bak
+
+# sqlcmd output from demo runs
+out.txt
+*.out
+
+# macOS
+.DS_Store
