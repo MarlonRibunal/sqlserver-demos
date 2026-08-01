@@ -19,7 +19,7 @@ and different fixes, and memory grant feedback only ever fixes one of them.
 | Edition | Developer / Enterprise / Standard | Developer is free for non-production |
 | Permissions | `db_owner` on the database | Create objects, `ALTER DATABASE` |
 | | `ALTER ANY EVENT SESSION` (server) | Optional — without it the demo falls back to DMV evidence, except `MGFeedbackState`, which has no DMV source ([why](#design-notes)) |
-| Disk | ~1.5 GB free | ~1 GB for the sample database, a few hundred MB for the demo table |
+| Disk | ~1.5 GB free | ~1 GB for the sample database, a few hundred MB for the demo table. Query Store, which setup switches on for scenario F, holds about 1 MB for this workload — measured, two queries and two plans — but is enabled at its default 1 GB cap |
 
 **Do not run this against production.** `01-setup.sql` changes database-level
 settings by design — see [What setup changes](#what-setup-changes-on-your-database).
@@ -179,7 +179,7 @@ All recorded in `Demo.DemoState` before being changed, all restored by
 | Compatibility level raised to the engine's maximum | WideWorldImporters ships at 130. Row-mode memory grant feedback needs 150; PSP needs 160. |
 | `PARAMETER_SENSITIVE_PLAN_OPTIMIZATION` set `OFF` (2022+) | PSP targets exactly this query shape and would fix scenarios A and B before you saw them fail. Scenario E turns it back on for the contrast. |
 | `ROW_MODE_MEMORY_GRANT_FEEDBACK` set `ON` (2019+) | Scenario C is entirely about this feature. Asserted rather than assumed — if it is off, the grant stays flat and the scenario reads as broken. |
-| Query Store set to `READ_WRITE` if it wasn't already (2016+) | Scenario F watches feedback survive a recompile, and Query Store is where it survives. Collected data is never cleared — see below. |
+| Query Store set to `READ_WRITE` if it wasn't already (2016+) | Scenario F watches feedback survive a recompile, and Query Store is where it survives. Enabled at its defaults, including the 1 GB storage cap; this demo puts about 1 MB in it. Collected data is never cleared — see below. |
 | `MEMORY_GRANT_FEEDBACK_PERSISTENCE` toggled during scenario F (2022+) | The scenario runs the same sequence with it off and on. Restored at the end of the scenario as well as by cleanup. |
 
 Everything else is additive: one schema, one table of demo data, two procedures,
