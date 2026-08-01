@@ -60,7 +60,7 @@ the backup into the container first and use Linux paths.
 | # | Script | When | Runs the demo? | Roughly |
 |---|--------|------|----------------|---------|
 | 1 | `01-setup.sql` | Once, first | No | A few minutes |
-| 2 | `02-demo.sql` | After setup. Re-runnable. | **Yes** | A few minutes |
+| 2 | `02-demo.sql` | After setup. Re-runnable. | **Yes** | Several minutes |
 | 3 | `03-cleanup.sql` | Last | No | Seconds |
 
 Each file is safe to run top to bottom in one go (F5). Nothing needs stepping
@@ -71,9 +71,10 @@ through.
 Turn on **SSMS → Query Options → Results → Grid → "Discard results after
 execution"**.
 
-The procedure returns 500,000 wide rows about ten times during the demo. Without
-that setting you are timing the client grid rather than the server, and the
-elapsed times in the summary are meaningless.
+The procedure returns 500,000 wide rows about twenty times during the demo,
+sixteen of them inside the loops in scenarios C and F. Without that setting you
+are timing the client grid rather than the server, and the elapsed times in the
+summary are meaningless.
 
 Azure Data Studio and the VS Code mssql extension have no equivalent setting —
 run the file through `sqlcmd` instead and throw the output away:
@@ -119,9 +120,12 @@ WHERE name = 'max server memory (MB)';
 | E | Parameter Sensitive Plan optimization | 2022+ only. The engine caches multiple variants and handles it without recompiling. |
 | F | Feedback that outlives the plan | 2022+ only. `sp_recompile` throws the plan away; the learned grant comes back anyway, out of Query Store. |
 
-**`03-cleanup.sql`** — restores the compatibility level and scoped configurations
-from `Demo.DemoState`, drops the event session, drops the schema. Prints a
-before/after you can check against `01-setup.sql`'s opening output.
+**`03-cleanup.sql`** — restores the compatibility level, the scoped
+configurations, and Query Store's desired state from `Demo.DemoState`, drops the
+event session, drops the schema. Prints a before/after you can check against
+`01-setup.sql`'s opening output. Query Store's collected data is left alone —
+turning it off does not discard it, and that history is not this script's to
+delete.
 
 ## How to read the output
 
@@ -179,8 +183,8 @@ All recorded in `Demo.DemoState` before being changed, all restored by
 | `MEMORY_GRANT_FEEDBACK_PERSISTENCE` toggled during scenario F (2022+) | The scenario runs the same sequence with it off and on. Restored at the end of the scenario as well as by cleanup. |
 
 Everything else is additive: one schema, one table of demo data, two procedures,
-two views, a results table, two harness procedures, and one server-level
-Extended Events session.
+two views, a results table, a state table, two harness procedures, and one
+server-level Extended Events session.
 
 **What setup deliberately does not do:** `ALTER DATABASE … SET QUERY_STORE
 CLEAR`. If Query Store was already collecting on this database, wiping its

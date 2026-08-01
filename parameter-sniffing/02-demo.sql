@@ -13,17 +13,18 @@
   #  SSMS > Query Options > Results > Grid                                   #
   #         [x] Discard results after execution                              #
   #                                                                          #
-  #  This procedure returns 500,000 wide rows about ten times over. Without   #
-  #  that setting you are timing the client grid, not the server, and the     #
-  #  elapsed times in the summary will be meaningless.                        #
+  #  This procedure returns 500,000 wide rows about twenty times over.       #
+  #  Without that setting you are timing the client grid, not the server,    #
+  #  and the elapsed times in the summary will be meaningless.               #
   #                                                                          #
-  #  Not on SSMS? Azure Data Studio and the VS Code mssql extension have no   #
-  #  equivalent setting. Run this file through sqlcmd instead and send the    #
-  #  rows to a file you then delete:                                          #
-  #      sqlcmd -S <server> -d WideWorldImporters -i 02-demo.sql -o out.txt   #
+  #  Not on SSMS? Azure Data Studio and the VS Code mssql extension have no  #
+  #  equivalent setting. Run this file through sqlcmd instead and send the   #
+  #  rows to a file you then delete:                                         #
+  #      sqlcmd -S <server> -d WideWorldImporters -i 02-demo.sql -o out.txt  #
   ############################################################################
 
-  Expected runtime: a few minutes, most of it scenario C.
+  Expected runtime: several minutes, most of it scenarios C and F -- between
+  them they execute the whale sixteen times.
 
   Scenarios
     A  sniff the minnow, then run the whale   -> right plan for 300 rows, run for 500,000
