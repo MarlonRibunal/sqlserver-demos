@@ -126,6 +126,18 @@ BEGIN
 END
 ELSE
     RAISERROR('No PARAMETER_SENSITIVE_PLAN_OPTIMIZATION on this build. Nothing to disable.', 0, 1) WITH NOWAIT;
+
+-- Scenario C is entirely about row mode memory grant feedback, so assert it
+-- rather than hope for it. The original value was recorded in step 1 and
+-- 03-cleanup.sql puts it back.
+IF EXISTS (SELECT 1 FROM sys.database_scoped_configurations
+           WHERE name = N'ROW_MODE_MEMORY_GRANT_FEEDBACK')
+BEGIN
+    RAISERROR('Enabling ROW_MODE_MEMORY_GRANT_FEEDBACK for scenario C.', 0, 1) WITH NOWAIT;
+    ALTER DATABASE SCOPED CONFIGURATION SET ROW_MODE_MEMORY_GRANT_FEEDBACK = ON;
+END
+ELSE
+    RAISERROR('No ROW_MODE_MEMORY_GRANT_FEEDBACK on this build. Scenario C needs 2019+ at compat 150+.', 0, 1) WITH NOWAIT;
 GO
 
 
@@ -307,8 +319,16 @@ END
 GO
 
 /*  Identical query, plus OPTION (RECOMPILE). Used by scenario D.
-    Note what you will NOT find afterwards: a cached plan. That is the point --
-    there is no retained plan for memory grant feedback to attach to.           */
+
+    A statement-level RECOMPILE does not empty the plan cache. The PROCEDURE's
+    compiled plan is cached and reused like any other -- you can see it in
+    sys.dm_exec_cached_plans with a rising usecounts -- and sys.dm_exec_query_plan
+    returns the plan from the most recent compile of the statement. What does not
+    happen is statement plan REUSE: every execution compiles that SELECT again
+    against the actual parameter value, which is why the harness shows the plan
+    shape and the grant changing from row to row, and why execution_count in
+    sys.dm_exec_query_stats stays at 1. Nothing accumulates across executions,
+    so memory grant feedback has nothing to learn from.                          */
 CREATE OR ALTER PROCEDURE Demo.usp_CustomerLinesByPrice_Recompile
     @CustomerID int
 AS
@@ -352,9 +372,13 @@ CREATE TABLE Demo.DemoResults
     GrantMB         decimal(18,2) NULL,   -- what the engine handed out
     UsedGrantMB     decimal(18,2) NULL,   -- what the query actually touched
     IdealGrantMB    decimal(18,2) NULL,   -- what it should have had
+    GrantKB         bigint        NULL,   -- raw last_grant_kb; joins to the XE event
     LogicalReads    bigint        NULL,
     ElapsedMs       bigint        NULL,
-    MGFeedbackState nvarchar(50)  NULL,   -- IsMemoryGrantFeedbackAdjusted
+    -- IsMemoryGrantFeedbackAdjusted. Not available from any DMV -- it exists
+    -- only in an ACTUAL execution plan, so it is back-filled from Extended
+    -- Events by Demo.usp_BackfillMGFeedback. See the note on that procedure.
+    MGFeedbackState nvarchar(50)  NULL,
     ExecutionCount  bigint        NULL,
     PlanGenNum      bigint        NULL,
     CapturedAt      datetime2(3)  NOT NULL CONSTRAINT DF_DemoResults_CapturedAt DEFAULT SYSDATETIME()
@@ -417,16 +441,14 @@ BEGIN
 
     DECLARE @sniffed nvarchar(128),
             @est     float,
-            @mgf     nvarchar(50),
             @shape   varchar(300);
 
     IF @plan IS NULL
-        SET @shape = '(no cached plan - expected for OPTION (RECOMPILE))';
+        SET @shape = '(no plan retrievable for this plan_handle)';
     ELSE
     BEGIN
         SET @sniffed = @plan.value('(//*[local-name()="ColumnReference"]/@ParameterCompiledValue)[1]', 'nvarchar(128)');
         SET @est     = @plan.value('(//*[local-name()="QueryPlan"]/*[local-name()="RelOp"]/@EstimateRows)[1]', 'float');
-        SET @mgf     = @plan.value('(//*[local-name()="MemoryGrantInfo"]/@IsMemoryGrantFeedbackAdjusted)[1]', 'nvarchar(50)');
 
         SET @shape = STUFF(
               CASE WHEN @plan.exist('//*[local-name()="RelOp"][@PhysicalOp="Index Seek"]')           = 1 THEN ' + Index Seek'           ELSE '' END
@@ -445,12 +467,107 @@ BEGIN
     INSERT Demo.DemoResults
            (Scenario, StepNo, StepDescription, ObjectName, ParamUsed, ParamRole,
             SniffedValue, PlanShape, EstimatedRows, ActualRows,
-            GrantMB, UsedGrantMB, IdealGrantMB, LogicalReads, ElapsedMs,
+            GrantMB, UsedGrantMB, IdealGrantMB, GrantKB, LogicalReads, ElapsedMs,
             MGFeedbackState, ExecutionCount, PlanGenNum)
     VALUES (@Scenario, @StepNo, @StepDescription, @ObjectName, @ParamUsed, @ParamRole,
             @sniffed, @shape, @est, @rows,
-            @grant_kb / 1024.0, @used_kb / 1024.0, @ideal_kb / 1024.0, @reads, @elapsed,
-            @mgf, @execs, @plangen);
+            @grant_kb / 1024.0, @used_kb / 1024.0, @ideal_kb / 1024.0, @grant_kb, @reads, @elapsed,
+            '(pending XE back-fill)', @execs, @plangen);
+END
+GO
+
+
+/*------------------------------------------------------------------------------
+  Back-fills MGFeedbackState. Called once by 02-demo.sql after the last
+  execution, never per capture.
+
+  Why this is not just another column read in usp_Capture:
+
+    IsMemoryGrantFeedbackAdjusted does not exist in the cached plan. It is a
+    RUNTIME attribute -- it only appears on MemoryGrantInfo in an ACTUAL
+    execution plan. sys.dm_exec_query_plan returns the compiled plan and never
+    carries it, which is why an earlier version of this harness recorded NULL on
+    every single row.
+
+    sys.dm_exec_query_plan_stats (2019+, LAST_QUERY_PLAN_STATS) is not a way out
+    either. It returns the last actual plan, but built from lightweight
+    profiling, and its MemoryGrantInfo is trimmed to SerialRequiredMemory,
+    SerialDesiredMemory, GrantedMemory and MaxUsedMemory. Verified on 2022 with
+    feedback demonstrably adjusting on that same plan handle: the attribute is
+    absent from that DMV, not NULL-valued.
+
+    So the only in-script source is an actual plan, and the only way to collect
+    actual plans without a human watching them go by is the
+    query_post_execution_showplan event. That is why MGFeedbackState is the one
+    column in this demo that depends on the Extended Events session.
+
+  Matching events back to rows: on (object_id, granted_memory_kb), with ordinal
+  position inside that pair as the tiebreaker. The event's granted_memory_kb is
+  the same number as sys.dm_exec_query_stats.last_grant_kb, which usp_Capture
+  stored raw in GrantKB for exactly this join. Matching on ordinal alone would
+  desync the moment anyone runs an extra EXEC by hand -- which scenario D
+  explicitly invites.
+------------------------------------------------------------------------------*/
+CREATE OR ALTER PROCEDURE Demo.usp_BackfillMGFeedback
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @x xml;
+
+    SELECT @x = CAST(t.target_data AS xml)
+    FROM   sys.dm_xe_sessions        AS s
+    JOIN   sys.dm_xe_session_targets AS t ON t.event_session_address = s.address
+    WHERE  s.name        = 'Demo_ParamSniffing'
+      AND  t.target_name = 'ring_buffer';
+
+    IF @x IS NULL
+    BEGIN
+        UPDATE Demo.DemoResults
+        SET    MGFeedbackState = '(no XE session - state unavailable)'
+        WHERE  MGFeedbackState = '(pending XE back-fill)';
+
+        RAISERROR('No XE ring buffer. MGFeedbackState cannot be filled in -- see the README.', 0, 1) WITH NOWAIT;
+        RETURN;
+    END
+
+    ;WITH ev AS
+    (
+        SELECT  EventTimeUTC = e.value('@timestamp', 'datetime2(3)'),
+                ObjectID     = e.value('(data[@name="object_id"]/value)[1]', 'int'),
+                GrantKB      = e.value('(data[@name="granted_memory_kb"]/value)[1]', 'bigint'),
+                MGF          = e.value('(data[@name="showplan_xml"]/value//*[local-name()="MemoryGrantInfo"]/@IsMemoryGrantFeedbackAdjusted)[1]', 'nvarchar(50)')
+        FROM    @x.nodes('/RingBufferTarget/event') AS n(e)
+        WHERE   e.value('@name', 'sysname') = 'query_post_execution_showplan'
+    ),
+    ranked_ev AS
+    (
+        SELECT  *,
+                rn = ROW_NUMBER() OVER (PARTITION BY ObjectID, GrantKB ORDER BY EventTimeUTC)
+        FROM    ev
+    ),
+    ranked_rows AS
+    (
+        SELECT  r.MGFeedbackState,
+                ObjectID = OBJECT_ID(r.ObjectName),
+                r.GrantKB,
+                rn = ROW_NUMBER() OVER (PARTITION BY OBJECT_ID(r.ObjectName), r.GrantKB
+                                        ORDER BY r.ResultID)
+        FROM    Demo.DemoResults AS r
+    )
+    UPDATE  rr
+    SET     MGFeedbackState = ISNULL(e.MGF, '(no MGF attribute in plan)')
+    FROM    ranked_rows AS rr
+    JOIN    ranked_ev   AS e
+           ON  e.ObjectID = rr.ObjectID
+           AND e.GrantKB  = rr.GrantKB
+           AND e.rn       = rr.rn;
+
+    -- Anything the ring buffer could not account for says so, rather than
+    -- leaving a NULL that reads as "feedback never fired".
+    UPDATE Demo.DemoResults
+    SET    MGFeedbackState = '(no XE showplan event matched)'
+    WHERE  MGFeedbackState = '(pending XE back-fill)';
 END
 GO
 
@@ -510,8 +627,20 @@ GO
   Proves sort spills and memory grant feedback adjustments without you watching
   actual execution plans go by. Needs ALTER ANY EVENT SESSION at server level;
   if you do not have it, this step fails harmlessly and the demo still runs on
-  DMV evidence alone.
+  DMV evidence alone -- EXCEPT for MGFeedbackState, which has no DMV source at
+  all. See the note on Demo.usp_BackfillMGFeedback in step 5.
 
+  query_post_execution_showplan is the expensive one and is deliberately pinned
+  to the two demo procedures by object_id rather than to the database. Without
+  that predicate it would capture a full showplan XML for every statement
+  running in WideWorldImporters, which is not something to leave switched on
+  behind a reader's back.
+
+  Which memory grant feedback event fires depends on the build:
+    2019+    memory_grant_updated_by_feedback
+    2022+    memory_grant_updated_by_percentile_grant  (percentile feedback --
+             this is what actually fires on 2022 and up, and the older event
+             may stay silent for the whole run)
   Events are added only if they exist on this build, so this works on 2017
   through 2025 without edits.
 ------------------------------------------------------------------------------*/
@@ -532,6 +661,8 @@ BEGIN TRY
           AND  o.name IN ('sort_warning',
                           'hash_warning',
                           'memory_grant_updated_by_feedback',
+                          'memory_grant_updated_by_percentile_grant',
+                          'memory_grant_feedback_persistence_update',
                           'memory_grant_feedback_loop_disabled');
 
     OPEN ev;
@@ -545,6 +676,19 @@ BEGIN TRY
     END
     CLOSE ev; DEALLOCATE ev;
 
+    -- The actual plans. This is the only source of MGFeedbackState.
+    DECLARE @o1 nvarchar(20) = CAST(OBJECT_ID('Demo.usp_CustomerLinesByPrice')           AS nvarchar(20)),
+            @o2 nvarchar(20) = CAST(OBJECT_ID('Demo.usp_CustomerLinesByPrice_Recompile') AS nvarchar(20));
+
+    IF @o1 IS NOT NULL AND @o2 IS NOT NULL
+       AND EXISTS (SELECT 1 FROM sys.dm_xe_objects AS o
+                   JOIN sys.dm_xe_packages AS p ON p.guid = o.package_guid
+                   WHERE o.object_type = 'event' AND p.name = 'sqlserver'
+                     AND o.name = 'query_post_execution_showplan')
+        SET @events += N'ADD EVENT sqlserver.query_post_execution_showplan'
+                     + N' (WHERE (sqlserver.database_id = ' + @dbid
+                     + N' AND (object_id = ' + @o1 + N' OR object_id = ' + @o2 + N'))), ';
+
     IF @events = N''
         RAISERROR('None of the target events exist on this build. Skipping XE session.', 0, 1) WITH NOWAIT;
     ELSE
@@ -553,7 +697,9 @@ BEGIN TRY
             N'CREATE EVENT SESSION Demo_ParamSniffing ON SERVER '
           + LEFT(@events, LEN(@events) - 1)      -- drop trailing comma
           + N' ADD TARGET package0.ring_buffer (SET max_events_limit = (1000))'
-          + N' WITH (MAX_DISPATCH_LATENCY = 5 SECONDS, STARTUP_STATE = OFF);';
+          -- Showplan XML is large. The default 4 MB session buffer is enough for
+          -- this demo's two dozen executions, but not by a wide margin.
+          + N' WITH (MAX_MEMORY = 16384 KB, MAX_DISPATCH_LATENCY = 5 SECONDS, STARTUP_STATE = OFF);';
         EXEC sys.sp_executesql @xe;
         RAISERROR('Event session Demo_ParamSniffing created (stopped).', 0, 1) WITH NOWAIT;
     END

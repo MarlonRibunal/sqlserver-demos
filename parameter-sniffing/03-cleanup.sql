@@ -131,6 +131,7 @@ GO
 DROP PROCEDURE IF EXISTS Demo.usp_CustomerLinesByPrice;
 DROP PROCEDURE IF EXISTS Demo.usp_CustomerLinesByPrice_Recompile;
 DROP PROCEDURE IF EXISTS Demo.usp_Capture;
+DROP PROCEDURE IF EXISTS Demo.usp_BackfillMGFeedback;
 DROP VIEW      IF EXISTS Demo.vw_GrantStats;
 DROP VIEW      IF EXISTS Demo.vw_CachedPlan;
 DROP TABLE     IF EXISTS Demo.OrderLinesSkewed;

@@ -28,8 +28,8 @@
   Scenarios
     A  sniff the minnow, then run the whale   -> right plan for 300 rows, run for 500,000
     B  sniff the whale, then run the minnow   -> huge grant reserved for a handful of rows
-    C  memory grant feedback                  -> watch the grant self-correct, plan shape does not
-    D  OPTION (RECOMPILE)                     -> correct every time, and nothing left in cache
+    C  memory grant feedback                  -> the grant corrects itself, the plan shape never does
+    D  OPTION (RECOMPILE)                     -> correct plan AND grant every time, at a compile per call
     E  Parameter Sensitive Plan optimization  -> 2022+ only; the engine handles it itself
 
   UNTESTED: written without access to a SQL Server instance.
@@ -51,9 +51,15 @@ TRUNCATE TABLE Demo.DemoResults;
 GO
 
 -- Start the Extended Events session if 01-setup managed to create it.
+-- Stopped first, deliberately: stopping discards the ring buffer, and this file
+-- is re-runnable. A previous run that died before its own STOP at the bottom
+-- would otherwise leave events behind for usp_BackfillMGFeedback to match
+-- against the rows of this run.
 BEGIN TRY
+    IF EXISTS (SELECT 1 FROM sys.dm_xe_sessions WHERE name = 'Demo_ParamSniffing')
+        ALTER EVENT SESSION Demo_ParamSniffing ON SERVER STATE = STOP;
+
     IF EXISTS (SELECT 1 FROM sys.server_event_sessions WHERE name = 'Demo_ParamSniffing')
-       AND NOT EXISTS (SELECT 1 FROM sys.dm_xe_sessions WHERE name = 'Demo_ParamSniffing')
         ALTER EVENT SESSION Demo_ParamSniffing ON SERVER STATE = START;
 END TRY
 BEGIN CATCH
@@ -150,15 +156,32 @@ GO
        grant column should move DOWN the rows, one step behind the spill.
 
   What to look for:
-    - GrantMB climbing across steps 2..7 while the query keeps spilling
-    - MGFeedbackState moving through values like NoFirstExecution ->
-      YesAdjusting -> YesStable
+    - GrantMB moving across steps 2..7 while the query keeps spilling
+    - MGFeedbackState moving through the engine's feedback states. The strings
+      come from the plan verbatim, colons and spaces included:
+          No: First Execution      nothing to learn from yet
+          No: Accurate Grant       the grant was already right
+          Yes: Adjusting           feedback changed the grant
+          Yes: Stable              feedback settled on a size
+          Yes: Percentile Adjusting   2022+ percentile feedback (see below)
     - PlanShape NEVER changing. This is the whole point: memory grant feedback
       fixes the grant, never the plan. Those 500,000 key lookups are still there.
 
-  Needs compatibility level 150+. At 140 or below you will see a flat grant and
-  MGFeedbackState will likely be NULL -- that is a correct result for that build,
-  not a broken script.
+  Do not expect a tidy climb. On 2019 the grant walks up and stabilises. On
+  2022+ percentile feedback sizes the grant from a history of executions rather
+  than from the last one, so it can overshoot, settle below ideal, and move
+  again several executions later. A grant that oscillates here is the feature
+  working, not the demo failing.
+
+  Needs compatibility level 150+ and ROW_MODE_MEMORY_GRANT_FEEDBACK on, both of
+  which 01-setup.sql asserts. At 140 or below you will see a flat grant and
+  MGFeedbackState stuck on "No: First Execution" -- a correct result for that
+  build, not a broken script.
+
+  MGFeedbackState is the one column here that comes from Extended Events rather
+  than a DMV, because the attribute exists only in an actual execution plan.
+  If 01-setup.sql could not create the event session, this column says so
+  instead of reporting a state.
 ==============================================================================*/
 PRINT '';
 PRINT '--- SCENARIO C: memory grant feedback (slowest scenario) ---';
@@ -207,16 +230,31 @@ GO
     - GrantMB tracking ActualRows in BOTH directions: small for the minnow, large
       for the whale, small again for the minnow. Compare against scenarios A and
       B, where one of the two was always wrong.
-    - PlanShape and SniffedValue reported as "(no cached plan ...)". That is not
-      a gap in the harness, it is the finding: a RECOMPILE statement leaves
-      nothing in the plan cache, so there is nothing for memory grant feedback
-      to attach to and improve across executions. Scenario C's self-correcting
-      grant cannot happen here, because there is no plan to correct.
+    - PlanShape ALSO changing per row -- seek for the minnow, clustered scan for
+      the whale, seek again for the minnow. This is the one scenario in the file
+      where the harness shows you the shape flipping, because each execution
+      compiles the statement afresh and sys.dm_exec_query_plan hands back that
+      most recent compile.
+    - SniffedValue NULL on every row. Nothing was sniffed: with RECOMPILE the
+      optimizer knows the literal value at compile time, so the plan carries no
+      ParameterCompiledValue attribute to report.
+    - ExecutionCount stuck at 1 while scenario C's climbed, and MGFeedbackState
+      stuck at "No: First Execution". THAT is the real cost, and the reason
+      scenario C's self-correcting grant cannot happen here: nothing accumulates
+      across executions for feedback to learn from.
 
-  Because there is no cached plan, this scenario cannot show you the plan SHAPE
-  flipping. If you want to see that, turn on the actual execution plan and run
-  the two EXEC statements below by hand -- seek+lookup for the minnow, scan for
-  the whale, correctly chosen each time.
+  Note what this scenario does NOT show, despite what you may have read: an
+  emptied plan cache. A statement-level RECOMPILE does not remove the
+  procedure's compiled plan -- sys.dm_exec_cached_plans still lists it, with a
+  rising usecounts. What it removes is statement plan REUSE. Verify it yourself
+  after the run:
+
+      SELECT cp.cacheobjtype, cp.objtype, cp.usecounts,
+             ObjName = OBJECT_NAME(st.objectid, st.dbid)
+      FROM   sys.dm_exec_cached_plans AS cp
+      CROSS APPLY sys.dm_exec_sql_text(cp.plan_handle) AS st
+      WHERE  st.objectid = OBJECT_ID('Demo.usp_CustomerLinesByPrice_Recompile')
+        AND  st.dbid = DB_ID();
 
   The cost you are trading for this is a compile on every call, paid in CPU,
   and no plan reuse. On a procedure called thousands of times a minute that is
@@ -300,6 +338,11 @@ GO
 WAITFOR DELAY '00:00:06';
 GO
 
+-- Fill in MGFeedbackState from the captured actual plans. One pass over the
+-- ring buffer for the whole run -- see the note on the procedure in 01-setup.
+EXEC Demo.usp_BackfillMGFeedback;
+GO
+
 PRINT '';
 PRINT '=== 1. THE SUMMARY ===';
 GO
@@ -366,13 +409,17 @@ IF @x IS NULL
     RAISERROR('No XE data (session not running, or not created). DMV evidence above still stands.', 0, 1) WITH NOWAIT;
 ELSE
     -- Shredded generically as name/value pairs, because the useful fields differ
-    -- per event and per build.
+    -- per event and per build. query_post_execution_showplan is excluded: it is
+    -- collected for MGFeedbackState, it carries eighteen fields including a
+    -- whole plan XML, and dumping it here would bury the spill and feedback
+    -- events this result set exists to show.
     SELECT  EventName    = e.value('@name', 'sysname'),
             EventTimeUTC = e.value('@timestamp', 'datetime2(3)'),
             FieldName    = d.value('@name', 'sysname'),
             FieldValue   = d.value('(value/text())[1]', 'nvarchar(400)')
     FROM    @x.nodes('/RingBufferTarget/event') AS n(e)
     CROSS APPLY e.nodes('data') AS dn(d)
+    WHERE   e.value('@name', 'sysname') <> 'query_post_execution_showplan'
     ORDER BY EventTimeUTC, EventName, FieldName;
 GO
 
@@ -402,7 +449,17 @@ GO
         WHERE name = 'PARAMETER_SENSITIVE_PLAN_OPTIMIZATION';
 
   4. Scenario C shows a flat grant. Check the compatibility level is 150+ --
-     01-setup.sql prints it, and the whole run prints it again at the top.
+     01-setup.sql prints it, and the whole run prints it again at the top --
+     and that ROW_MODE_MEMORY_GRANT_FEEDBACK is ON:
+        SELECT name, value FROM sys.database_scoped_configurations
+        WHERE name = 'ROW_MODE_MEMORY_GRANT_FEEDBACK';
+
+  4a. MGFeedbackState reads "(no XE session - state unavailable)" or
+     "(no XE showplan event matched)". That column is sourced from the
+     query_post_execution_showplan event, not from a DMV -- the attribute does
+     not exist in any cached plan. Either 01-setup.sql could not create the
+     event session (needs ALTER ANY EVENT SESSION at server level), or the
+     session was not running. Everything else in the summary is unaffected.
 
   5. GrantMB never gets large. Your instance may have a low max server memory,
      capping the grant. Compare GrantMB against IdealMB rather than against an
