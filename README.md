@@ -8,7 +8,7 @@ expect in the output.
 
 | Topic | Sample database | Min. version |
 |---|---|---|
-| [Parameter sniffing, `RECOMPILE`, memory grant feedback](parameter-sniffing/) | WideWorldImporters | 2017 (2019+ for full effect) |
+| [Parameter sniffing, `RECOMPILE`, memory grant feedback](parameter-sniffing/) | WideWorldImporters | 2017 (2022+ for all six scenarios) |
 
 ## How these are built
 
@@ -35,8 +35,14 @@ executions to see the point.
 touching the sample database.
 
 **Setup records what it changes.** If a script alters a compatibility level, a
-scoped configuration, or a server setting, it saves the original value first and
-cleanup puts it back. Each topic README states plainly what its setup mutates.
+scoped configuration, a database setting such as Query Store, or a server
+setting, it saves the original value first and cleanup puts it back. Each topic
+README states plainly what its setup mutates.
+
+**Setup changes settings, never data it did not create.** Turning Query Store on
+for a demo is fair; clearing the query history that was already in it is not.
+Where a demo could take a destructive shortcut, it takes the longer route and
+says why in comments.
 
 **Object-scoped cache operations only** — `sp_recompile`, never
 `DBCC FREEPROCCACHE`. Nothing here flushes an entire instance's plan cache.

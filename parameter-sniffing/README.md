@@ -1,7 +1,8 @@
 # Parameter sniffing, `RECOMPILE`, and memory grant feedback
 
 **Sample database:** WideWorldImporters · **Min. version:** SQL Server 2017
-(2019+ for full effect) · **Status:** ⚠️ Untested — [see below](#status)
+(2019+ for scenario C, 2022+ for E and F) · **Status:** ⚠️ Largely untested —
+[see below](#status)
 
 A stored procedure that reliably produces parameter sniffing, and a harness that
 demonstrates it unattended.
