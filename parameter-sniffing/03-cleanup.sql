@@ -89,6 +89,43 @@ END
 GO
 
 
+PRINT '=== STEP 2b: restore Query Store ===';
+GO
+
+/*------------------------------------------------------------------------------
+  01-setup.sql set Query Store to READ_WRITE for scenario F if it was not
+  already. Put the desired state back.
+
+  Collected data is deliberately left alone. Turning Query Store off does not
+  discard it, and this script has no business deciding that a database's query
+  history is disposable.
+------------------------------------------------------------------------------*/
+IF OBJECT_ID('Demo.DemoState') IS NOT NULL
+BEGIN
+    DECLARE @qs_orig    nvarchar(60) = (SELECT SettingValue FROM Demo.DemoState
+                                        WHERE SettingName = 'QueryStoreDesiredState');
+    DECLARE @qs_current nvarchar(60) = (SELECT desired_state_desc FROM sys.database_query_store_options);
+    DECLARE @qs_sql     nvarchar(400);
+
+    IF @qs_orig IS NULL
+        RAISERROR('  no recorded Query Store state. Nothing to do.', 0, 1) WITH NOWAIT;
+    ELSE IF @qs_orig = @qs_current
+        RAISERROR('  Query Store already %s. Nothing to do.', 0, 1, @qs_current) WITH NOWAIT;
+    ELSE
+    BEGIN
+        SET @qs_sql = N'ALTER DATABASE ' + QUOTENAME(DB_NAME())
+                    + CASE @qs_orig
+                          WHEN N'OFF'       THEN N' SET QUERY_STORE = OFF;'
+                          WHEN N'READ_ONLY' THEN N' SET QUERY_STORE = ON (OPERATION_MODE = READ_ONLY);'
+                          ELSE                   N' SET QUERY_STORE = ON (OPERATION_MODE = READ_WRITE);'
+                      END;
+        RAISERROR('  restoring Query Store %s -> %s', 0, 1, @qs_current, @qs_orig) WITH NOWAIT;
+        EXEC sys.sp_executesql @qs_sql;
+    END
+END
+GO
+
+
 PRINT '=== STEP 3: drop the Extended Events session ===';
 GO
 

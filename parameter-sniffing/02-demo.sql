@@ -3,7 +3,7 @@
   ----------------------------------------------------------------------------
   Requires 01-setup.sql to have completed.
 
-  This runs five scenarios end to end and records the evidence into
+  This runs six scenarios end to end and records the evidence into
   Demo.DemoResults as it goes, so you do not have to sit there reading actual
   execution plans between executions. The summary at the bottom is the payoff.
 
@@ -31,6 +31,7 @@
     C  memory grant feedback                  -> the grant corrects itself, the plan shape never does
     D  OPTION (RECOMPILE)                     -> correct plan AND grant every time, at a compile per call
     E  Parameter Sensitive Plan optimization  -> 2022+ only; the engine handles it itself
+    F  feedback that outlives the plan        -> 2022+ only; a recompile does not reset the grant
 
   UNTESTED: written without access to a SQL Server instance.
 ==============================================================================*/
@@ -328,6 +329,180 @@ GO
 
 
 /*==============================================================================
+  SCENARIO F -- feedback that outlives the plan (SQL Server 2022+)
+
+  Scenario C showed the grant self-correcting on a cached plan, and scenario D
+  showed that a recompile leaves nothing to correct. This is what happens when
+  those two meet on 2022, where memory grant feedback is persisted in Query
+  Store rather than living only on the cached plan.
+
+  Both arms do exactly the same thing:
+
+      1. compile for the minnow
+      2. run the whale five times, so feedback learns a large grant for that
+         plan -- this is scenario C, replayed
+      3. sp_recompile: the cached plan is gone
+      4. run the MINNOW once, and look at the grant it gets
+
+  The only difference is MEMORY_GRANT_FEEDBACK_PERSISTENCE. With it off, step 4
+  gets what the optimizer estimates for 1,000 rows. With it on, step 4 gets the
+  grant that was learned from the whale -- on a plan that no longer exists,
+  for a parameter that was never the problem.
+
+  What to look for, on the two "AFTER RECOMPILE" rows:
+    - identical EstRows and ActualRows in both arms: same plan, same work
+    - GrantMB an order of magnitude apart between them
+    - the persistence-ON row tripping the GRANT WASTED flag in the summary,
+      with UsedMB a rounding error next to GrantMB
+    - ExecutionCount back to 1 on both, which is the recompile in evidence
+    - MGFeedbackState on the persistence-ON row, which is the subtlest thing in
+      this file. It has been seen reading "No: First Execution" AND
+      "Yes: Percentile Adjusting" on identical runs, because it describes the
+      in-cache feedback loop -- which, on the first execution of a freshly
+      compiled plan, has not necessarily done anything yet. The grant arrived
+      from Query Store BEFORE that execution either way. If you were relying on
+      that column to tell you whether feedback was involved in a grant, this
+      row is where that habit breaks: read GrantMB against IdealMB instead.
+
+  The scenario prints the persisted feedback itself mid-run, straight out of
+  sys.query_store_plan_feedback and before the recompile, so you can read the
+  number in Query Store and then watch that same number turn up as a grant.
+  Result set 4 at the bottom reads the view again at the end.
+
+  The control arm runs FIRST and deliberately does not clear Query Store. Since
+  01-setup.sql may have found Query Store already collecting on this database,
+  clearing it is not this demo's to do -- and it turns out not to be needed:
+  with persistence OFF the engine ignores whatever is already stored, which is
+  also what makes this file re-runnable.
+==============================================================================*/
+PRINT '';
+PRINT '--- SCENARIO F: feedback that outlives the plan ---';
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.database_scoped_configurations
+               WHERE name = N'MEMORY_GRANT_FEEDBACK_PERSISTENCE')
+BEGIN
+    RAISERROR('No MEMORY_GRANT_FEEDBACK_PERSISTENCE on this build (needs SQL Server 2022+). Scenario F skipped.', 0, 1) WITH NOWAIT;
+    SET NOEXEC ON;
+END
+ELSE IF (SELECT actual_state_desc FROM sys.database_query_store_options) <> N'READ_WRITE'
+BEGIN
+    RAISERROR('Query Store is not READ_WRITE, so there is nowhere to persist feedback. Scenario F skipped.', 0, 1) WITH NOWAIT;
+    SET NOEXEC ON;
+END
+GO
+
+/*--- arm 1: the control. Feedback lives and dies with the cached plan. -------*/
+ALTER DATABASE SCOPED CONFIGURATION SET MEMORY_GRANT_FEEDBACK_PERSISTENCE = OFF;
+GO
+
+EXEC sys.sp_recompile N'Demo.usp_CustomerLinesByPrice';
+GO
+
+DECLARE @Whale  int = (SELECT CAST(SettingValue AS int) FROM Demo.DemoState WHERE SettingName = 'WhaleCustomerID'),
+        @Minnow int = (SELECT CAST(SettingValue AS int) FROM Demo.DemoState WHERE SettingName = 'MinnowCustomerID'),
+        @i      int = 1,
+        @step   int,
+        @desc   varchar(200);
+
+EXEC Demo.usp_CustomerLinesByPrice @CustomerID = @Minnow;
+EXEC Demo.usp_Capture 'F1. persistence OFF (control)', 1,
+     'Teach: compiled for the minnow', 'Demo.usp_CustomerLinesByPrice', @Minnow, 'minnow';
+
+WHILE @i <= 5
+BEGIN
+    SET @step = @i + 1;
+    SET @desc = 'Teach: whale execution ' + CAST(@i AS varchar(3)) + ' (no recompile)';
+    EXEC Demo.usp_CustomerLinesByPrice @CustomerID = @Whale;
+    EXEC Demo.usp_Capture 'F1. persistence OFF (control)', @step, @desc,
+         'Demo.usp_CustomerLinesByPrice', @Whale, 'whale';
+    SET @i += 1;
+END
+GO
+
+-- Push what Query Store is holding in memory out to disk, so the read below is
+-- not racing the background flush.
+EXEC sys.sp_query_store_flush_db;
+GO
+
+EXEC sys.sp_recompile N'Demo.usp_CustomerLinesByPrice';
+GO
+
+DECLARE @Minnow int = (SELECT CAST(SettingValue AS int) FROM Demo.DemoState WHERE SettingName = 'MinnowCustomerID');
+EXEC Demo.usp_CustomerLinesByPrice @CustomerID = @Minnow;
+EXEC Demo.usp_Capture 'F1. persistence OFF (control)', 7,
+     'AFTER RECOMPILE: first execution, minnow', 'Demo.usp_CustomerLinesByPrice', @Minnow, 'minnow';
+GO
+
+
+/*--- arm 2: the same run, with feedback persisted in Query Store ------------*/
+ALTER DATABASE SCOPED CONFIGURATION SET MEMORY_GRANT_FEEDBACK_PERSISTENCE = ON;
+GO
+
+EXEC sys.sp_recompile N'Demo.usp_CustomerLinesByPrice';
+GO
+
+DECLARE @Whale  int = (SELECT CAST(SettingValue AS int) FROM Demo.DemoState WHERE SettingName = 'WhaleCustomerID'),
+        @Minnow int = (SELECT CAST(SettingValue AS int) FROM Demo.DemoState WHERE SettingName = 'MinnowCustomerID'),
+        @i      int = 1,
+        @step   int,
+        @desc   varchar(200);
+
+EXEC Demo.usp_CustomerLinesByPrice @CustomerID = @Minnow;
+EXEC Demo.usp_Capture 'F2. persistence ON', 1,
+     'Teach: compiled for the minnow', 'Demo.usp_CustomerLinesByPrice', @Minnow, 'minnow';
+
+WHILE @i <= 5
+BEGIN
+    SET @step = @i + 1;
+    SET @desc = 'Teach: whale execution ' + CAST(@i AS varchar(3)) + ' (no recompile)';
+    EXEC Demo.usp_CustomerLinesByPrice @CustomerID = @Whale;
+    EXEC Demo.usp_Capture 'F2. persistence ON', @step, @desc,
+         'Demo.usp_CustomerLinesByPrice', @Whale, 'whale';
+    SET @i += 1;
+END
+GO
+
+EXEC sys.sp_query_store_flush_db;
+GO
+
+-- Read it HERE, before the recompile. This is the number the next compile is
+-- about to be handed. Result set 4 at the bottom reads the same view again, by
+-- which point the payoff execution below has already revised it downwards --
+-- feedback keeps learning, and the minnow only ever needed a fraction of it.
+PRINT '';
+PRINT '  scenario F: what Query Store is holding, about to be handed to a fresh compile';
+IF EXISTS (SELECT 1 FROM sys.system_objects WHERE name = 'query_store_plan_feedback')
+    EXEC sys.sp_executesql N'
+        SELECT  f.plan_id, f.state_desc, f.feedback_data
+        FROM    sys.query_store_plan_feedback AS f
+        WHERE   f.feature_desc = ''Memory Grant Feedback'';';
+GO
+
+EXEC sys.sp_recompile N'Demo.usp_CustomerLinesByPrice';
+GO
+
+DECLARE @Minnow int = (SELECT CAST(SettingValue AS int) FROM Demo.DemoState WHERE SettingName = 'MinnowCustomerID');
+EXEC Demo.usp_CustomerLinesByPrice @CustomerID = @Minnow;
+EXEC Demo.usp_Capture 'F2. persistence ON', 7,
+     'AFTER RECOMPILE: first execution, minnow', 'Demo.usp_CustomerLinesByPrice', @Minnow, 'minnow';
+GO
+
+-- Put it back where 01-setup.sql found it, so re-running this file behaves
+-- identically. 03-cleanup.sql restores it too, from Demo.DemoState.
+DECLARE @orig nvarchar(256) = (SELECT SettingValue FROM Demo.DemoState
+                               WHERE SettingName = 'DSC_MEMORY_GRANT_FEEDBACK_PERSISTENCE');
+IF @orig = N'0'
+    ALTER DATABASE SCOPED CONFIGURATION SET MEMORY_GRANT_FEEDBACK_PERSISTENCE = OFF;
+ELSE
+    ALTER DATABASE SCOPED CONFIGURATION SET MEMORY_GRANT_FEEDBACK_PERSISTENCE = ON;
+GO
+
+SET NOEXEC OFF;
+GO
+
+
+/*==============================================================================
   RESULTS
 ==============================================================================*/
 PRINT '';
@@ -394,7 +569,62 @@ ORDER BY r.StepNo;
 GO
 
 PRINT '';
-PRINT '=== 3. EXTENDED EVENTS: spills and feedback adjustments ===';
+PRINT '=== 3. SCENARIO F, THE GRANT THAT SURVIVED A RECOMPILE ===';
+GO
+
+-- The two rows worth putting next to each other: same plan, same 1,000 rows,
+-- same fresh compile, one of them holding memory it will never touch.
+SELECT  Arm           = r.Scenario,
+        r.StepDescription,
+        EstRows       = CAST(r.EstimatedRows AS decimal(18,1)),
+        ActualRows    = r.ActualRows,
+        GrantMB       = r.GrantMB,
+        UsedMB        = r.UsedGrantMB,
+        IdealMB       = r.IdealGrantMB,
+        WasteHint     = CASE WHEN r.GrantMB > 5 AND r.GrantMB > r.UsedGrantMB * 2 THEN 'GRANT WASTED' ELSE '' END,
+        ExecCount     = r.ExecutionCount,
+        r.MGFeedbackState,
+        r.PlanShape
+FROM    Demo.DemoResults AS r
+WHERE   r.Scenario LIKE 'F%'
+  AND   r.StepDescription LIKE 'AFTER RECOMPILE%'
+ORDER BY r.ResultID;
+GO
+
+PRINT '';
+PRINT '=== 4. THE PERSISTED FEEDBACK ITSELF (Query Store) ===';
+GO
+
+/*  Guarded and run through sp_executesql: sys.query_store_plan_feedback does
+    not exist before 2022, and an unguarded reference would fail the batch.
+
+    AdditionalMemoryKB here is what a fresh compile of this plan would be handed
+    right now. It may match the number scenario F printed mid-run, or it may
+    have shrunk: the last thing that scenario did was execute the minnow,
+    feedback learns from that, and persisting the revision is asynchronous. Both
+    outcomes are correct, and the second one is the mechanism carrying on
+    working after the demo stopped watching.
+
+    Note for anyone editing the string below: every comment and literal inside
+    it lives in an N'...' literal, so an apostrophe in a word like "scenario's"
+    ends the string and breaks the batch. Keep the prose out here.             */
+IF EXISTS (SELECT 1 FROM sys.system_objects WHERE name = 'query_store_plan_feedback')
+    EXEC sys.sp_executesql N'
+        SELECT  f.plan_id,
+                f.feature_desc,
+                f.state_desc,
+                f.feedback_data,
+                f.create_time,
+                f.last_updated_time
+        FROM    sys.query_store_plan_feedback AS f
+        WHERE   f.feature_desc = ''Memory Grant Feedback''
+        ORDER BY f.last_updated_time DESC;';
+ELSE
+    RAISERROR('sys.query_store_plan_feedback does not exist on this build (needs 2022+).', 0, 1) WITH NOWAIT;
+GO
+
+PRINT '';
+PRINT '=== 5. EXTENDED EVENTS: spills and feedback adjustments ===';
 GO
 
 DECLARE @x xml;

@@ -14,7 +14,7 @@ and different fixes, and memory grant feedback only ever fixes one of them.
 
 | | Requirement | Why |
 |---|---|---|
-| Engine | SQL Server 2017+ | 2019+ for row-mode memory grant feedback (scenario C); 2022 for PSP (scenario E) |
+| Engine | SQL Server 2017+ | 2019+ for row-mode memory grant feedback (scenario C); 2022 for PSP (scenario E) and feedback persistence (scenario F) |
 | Edition | Developer / Enterprise / Standard | Developer is free for non-production |
 | Permissions | `db_owner` on the database | Create objects, `ALTER DATABASE` |
 | | `ALTER ANY EVENT SESSION` (server) | Optional — without it the demo falls back to DMV evidence, except `MGFeedbackState`, which has no DMV source ([why](#design-notes)) |
@@ -107,7 +107,7 @@ WHERE name = 'max server memory (MB)';
   grant feedback adjustments, and the actual plans. Optional, as noted in the
   prerequisites — but `MGFeedbackState` is blank without it.
 
-**`02-demo.sql`** — five scenarios, evidence captured after every execution:
+**`02-demo.sql`** — six scenarios, evidence captured after every execution:
 
 | | Scenario | Shows |
 |---|---|---|
@@ -116,6 +116,7 @@ WHERE name = 'max server memory (MB)';
 | C | Memory grant feedback | The grant corrects itself over repeated executions — overshooting and re-correcting on 2022+. **The plan shape never does.** |
 | D | `OPTION (RECOMPILE)` | Correct plan *and* correct grant in both directions — paid for with a compile per call and nothing accumulating for feedback to learn from. |
 | E | Parameter Sensitive Plan optimization | 2022+ only. The engine caches multiple variants and handles it without recompiling. |
+| F | Feedback that outlives the plan | 2022+ only. `sp_recompile` throws the plan away; the learned grant comes back anyway, out of Query Store. |
 
 **`03-cleanup.sql`** — restores the compatibility level and scoped configurations
 from `Demo.DemoState`, drops the event session, drops the schema. Prints a
@@ -123,7 +124,7 @@ before/after you can check against `01-setup.sql`'s opening output.
 
 ## How to read the output
 
-Three result sets at the bottom of `02-demo.sql`:
+Five result sets at the bottom of `02-demo.sql`:
 
 1. **The summary** — one row per execution, with two computed flag columns:
    `LIKELY SPILLED` when the ideal grant far exceeds what was granted, and
@@ -137,11 +138,24 @@ Three result sets at the bottom of `02-demo.sql`:
    of executions rather than the last one, so it can overshoot, settle below
    ideal, and move again later. `PlanShape` should be identical on all six rows;
    that is the whole point of the scenario.
-3. **Extended Events** — `sort_warning` plus whichever feedback event this build
+3. **Scenario F, the grant that survived a recompile** — the two `AFTER
+   RECOMPILE` rows side by side. Same plan, same 1,000 rows, same fresh compile;
+   the only difference is whether `MEMORY_GRANT_FEEDBACK_PERSISTENCE` was on.
+   Expect roughly two orders of magnitude between the two `GrantMB` values and
+   a `GRANT WASTED` flag on the persistence-ON row.
+4. **The persisted feedback itself** — `sys.query_store_plan_feedback`, where
+   `AdditionalMemoryKB` in `feedback_data` is the number a fresh compile would
+   be handed. Scenario F also prints this mid-run, before its recompile, so you
+   can read the number in Query Store and then watch it turn up as a grant. The
+   two readings may differ: feedback keeps learning after the scenario ends, and
+   persisting a revision is asynchronous.
+5. **Extended Events** — `sort_warning` plus whichever feedback event this build
    uses, shredded as name/value pairs. On 2019 that is
    `memory_grant_updated_by_feedback`; on 2022+ percentile feedback fires
    `memory_grant_updated_by_percentile_grant` instead, and the older event can
-   stay silent for the entire run even while the grant is visibly moving.
+   stay silent for the entire run even while the grant is visibly moving. On a
+   2022 run, look for `is_persisted_feedback_used` — that field is scenario F
+   in one boolean.
 
 Raw data stays in `Demo.DemoResults` until cleanup, so you can query it
 afterwards.
@@ -152,7 +166,7 @@ level below 150, or a plan going parallel.
 
 ## What setup changes on your database
 
-Both recorded in `Demo.DemoState` before being changed, both restored by
+All recorded in `Demo.DemoState` before being changed, all restored by
 `03-cleanup.sql`:
 
 | Change | Why |
@@ -160,10 +174,19 @@ Both recorded in `Demo.DemoState` before being changed, both restored by
 | Compatibility level raised to the engine's maximum | WideWorldImporters ships at 130. Row-mode memory grant feedback needs 150; PSP needs 160. |
 | `PARAMETER_SENSITIVE_PLAN_OPTIMIZATION` set `OFF` (2022+) | PSP targets exactly this query shape and would fix scenarios A and B before you saw them fail. Scenario E turns it back on for the contrast. |
 | `ROW_MODE_MEMORY_GRANT_FEEDBACK` set `ON` (2019+) | Scenario C is entirely about this feature. Asserted rather than assumed — if it is off, the grant stays flat and the scenario reads as broken. |
+| Query Store set to `READ_WRITE` if it wasn't already (2016+) | Scenario F watches feedback survive a recompile, and Query Store is where it survives. Collected data is never cleared — see below. |
+| `MEMORY_GRANT_FEEDBACK_PERSISTENCE` toggled during scenario F (2022+) | The scenario runs the same sequence with it off and on. Restored at the end of the scenario as well as by cleanup. |
 
 Everything else is additive: one schema, one table of demo data, two procedures,
-two views, a results table, a capture proc, and one server-level Extended Events
-session.
+two views, a results table, two harness procedures, and one server-level
+Extended Events session.
+
+**What setup deliberately does not do:** `ALTER DATABASE … SET QUERY_STORE
+CLEAR`. If Query Store was already collecting on this database, wiping its
+history to tidy up a demo is not a trade these scripts get to make. Scenario F
+is built to work without it — with `MEMORY_GRANT_FEEDBACK_PERSISTENCE = OFF` the
+engine ignores whatever is already stored, so the control arm stays honest even
+though scenario C ran first and taught the feedback loop a large grant.
 
 ## Design notes
 
@@ -229,6 +252,20 @@ buffer after the run and matches events to rows on
 tiebreaker. `GrantKB` exists on `Demo.DemoResults` to be the exact,
 non-rounded join key.
 
+**Scenario F is the one that changes the advice.** Scenarios C and D together
+imply a clean rule: feedback lives on the cached plan, so a recompile resets it.
+On 2022 that rule is wrong. Memory grant feedback is persisted in Query Store,
+keyed to the plan, and re-applied to a fresh compile — so a plan can arrive
+pre-loaded with a grant learned from executions it never ran, for parameter
+values it was never compiled for.
+
+The demo shows it as an A/B because a single number proves nothing: the same
+teach-then-recompile sequence runs twice, differing only in
+`MEMORY_GRANT_FEEDBACK_PERSISTENCE`, and the post-recompile grant differs by two
+orders of magnitude. The control arm runs first, and deliberately does not clear
+Query Store — with persistence off the engine ignores what is stored, which is
+what keeps the arm honest and the file re-runnable.
+
 **`sp_recompile`, never `DBCC FREEPROCCACHE`.** There is no reason to flush an
 entire instance's plan cache to reset one procedure.
 
@@ -250,3 +287,9 @@ checked on 2017, 2019, or 2025:
 - Scenario D's plan cache behaviour, run with the procedures verbatim from
   `01-setup.sql`: the cached plan and per-execution shape flip described above
   are what the harness actually reported, not what was originally assumed here.
+- Scenario F, run end to end with the scenario block verbatim from
+  `02-demo.sql`: control arm 1.23 MB against persistence-ON 102.25 MB on the
+  same freshly compiled 1,000-row plan, with `AdditionalMemoryKB` of 104,192 in
+  `sys.query_store_plan_feedback` and `is_persisted_feedback_used = true` in the
+  event stream. That the control arm ignores already-stored feedback was tested
+  separately, with a large value sitting in Query Store.

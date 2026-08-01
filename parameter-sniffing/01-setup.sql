@@ -93,7 +93,13 @@ SELECT 'DSC_' + name, CAST(value AS nvarchar(256))
 FROM   sys.database_scoped_configurations
 WHERE  name IN (N'PARAMETER_SENSITIVE_PLAN_OPTIMIZATION',
                 N'ROW_MODE_MEMORY_GRANT_FEEDBACK',
-                N'BATCH_MODE_MEMORY_GRANT_FEEDBACK');
+                N'BATCH_MODE_MEMORY_GRANT_FEEDBACK',
+                N'MEMORY_GRANT_FEEDBACK_PERSISTENCE');
+
+-- Scenario F needs Query Store, which is where persisted feedback lives.
+INSERT Demo.DemoState (SettingName, SettingValue)
+SELECT 'QueryStoreDesiredState', desired_state_desc
+FROM   sys.database_query_store_options;
 
 SELECT SettingName, SettingValue FROM Demo.DemoState ORDER BY SettingName;
 GO
@@ -138,6 +144,31 @@ BEGIN
 END
 ELSE
     RAISERROR('No ROW_MODE_MEMORY_GRANT_FEEDBACK on this build. Scenario C needs 2019+ at compat 150+.', 0, 1) WITH NOWAIT;
+GO
+
+/*------------------------------------------------------------------------------
+  Scenario F watches feedback survive a recompile, and the place it survives in
+  is Query Store. Without Query Store in READ_WRITE there is nowhere to persist
+  it and the scenario has nothing to show, so turn it on -- recording the
+  original desired state first, because this one is not a scoped configuration
+  and 03-cleanup.sql restores it separately.
+
+  Note what is NOT done here: no ALTER DATABASE ... SET QUERY_STORE CLEAR. If
+  you already had Query Store collecting on this database, wiping it to tidy up
+  a demo would be a poor trade. Scenario F is built to work without clearing.
+------------------------------------------------------------------------------*/
+DECLARE @qs_actual  nvarchar(60) = (SELECT actual_state_desc FROM sys.database_query_store_options);
+DECLARE @qs_sql     nvarchar(400);
+
+IF @qs_actual <> N'READ_WRITE'
+BEGIN
+    SET @qs_sql = N'ALTER DATABASE ' + QUOTENAME(DB_NAME())
+                + N' SET QUERY_STORE = ON (OPERATION_MODE = READ_WRITE);';
+    RAISERROR('Query Store is %s. Setting it to READ_WRITE for scenario F.', 0, 1, @qs_actual) WITH NOWAIT;
+    EXEC sys.sp_executesql @qs_sql;
+END
+ELSE
+    RAISERROR('Query Store already READ_WRITE. Leaving it alone.', 0, 1) WITH NOWAIT;
 GO
 
 
@@ -554,6 +585,11 @@ BEGIN
                 rn = ROW_NUMBER() OVER (PARTITION BY OBJECT_ID(r.ObjectName), r.GrantKB
                                         ORDER BY r.ResultID)
         FROM    Demo.DemoResults AS r
+        -- Only rows still awaiting a state. The ring buffer is emptied at the
+        -- start of every run, so it holds this run's events and nothing else --
+        -- ranking already-filled rows alongside them would shift the ordinals
+        -- and hand rows the wrong state.
+        WHERE   r.MGFeedbackState = '(pending XE back-fill)'
     )
     UPDATE  rr
     SET     MGFeedbackState = ISNULL(e.MGF, '(no MGF attribute in plan)')
