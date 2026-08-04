@@ -9,6 +9,7 @@ expect in the output.
 | Topic | Sample database | Min. version |
 |---|---|---|
 | [Parameter sniffing, `RECOMPILE`, memory grant feedback](parameter-sniffing/) | WideWorldImporters | 2017 (2022+ for all six scenarios) |
+| [tempdb: when to reach for a `#temp` table](tempdb/) | none — creates its own | 2016 |
 
 ## How these are built
 
@@ -32,12 +33,19 @@ end. You should not have to sit there reading execution plans between
 executions to see the point.
 
 **Everything lives in a `Demo` schema** so cleanup can drop it wholesale without
-touching the sample database.
+touching the sample database. A topic that needs no sample database may create
+its own database instead and drop it in cleanup — that is preferred where it
+works, since it puts the demo's blast radius at zero.
 
 **Setup records what it changes.** If a script alters a compatibility level, a
 scoped configuration, a database setting such as Query Store, or a server
 setting, it saves the original value first and cleanup puts it back. Each topic
-README states plainly what its setup mutates.
+README states plainly what its setup mutates — including when the answer is
+"nothing", which is worth stating explicitly rather than leaving to inference.
+
+**Prefer a scenario that needs no setting change at all.** Where two scenarios
+teach the same lesson, the one that does not touch engine configuration wins,
+even if it takes more setup data to build.
 
 **Setup changes settings, never data it did not create.** Turning Query Store on
 for a demo is fair; clearing the query history that was already in it is not.
