@@ -30,7 +30,7 @@
   #  equivalent of this counter, so isolation is the only control available.  #
   ############################################################################
 
-  TESTED end to end on SQL Server 2022 CU25 (16.0.4255.1), 15 schedulers,
+  TESTED end to end on SQL Server 2022 CU25 (16.0.4255.1), 8 schedulers,
   MAXDOP 0, cost threshold for parallelism 5.
 ==============================================================================*/
 

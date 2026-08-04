@@ -37,7 +37,7 @@
   rows. Run this on a scratch instance, not production -- see the note on the
   instance-wide performance counter in scenario D.
 
-  TESTED end to end on SQL Server 2022 CU25 (16.0.4255.1), 15 schedulers,
+  TESTED end to end on SQL Server 2022 CU25 (16.0.4255.1), 8 schedulers,
   MAXDOP 0, cost threshold for parallelism 5. Scenarios C and E are the two
   that are sensitive to instance configuration; both detect and report when
   they cannot run rather than printing a misleading result.

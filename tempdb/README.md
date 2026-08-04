@@ -67,7 +67,7 @@ sqlcmd -S <server> -i 03-cleanup.sql
 
 ## The scenarios, and what they showed
 
-Numbers below are from the tested run: SQL Server 2022 CU25, 15 schedulers,
+Numbers below are from the tested run: SQL Server 2022 CU25, 8 schedulers,
 MAXDOP 0, cost threshold for parallelism 5. Yours will differ in magnitude. The
 *ratios* and the *verdicts* are the point.
 
@@ -78,9 +78,9 @@ optimizer expands it twice.
 
 | | logical reads |
 |---|---|
-| CTE referenced once | 8,421 |
-| **CTE referenced twice** | **16,842** — exactly 2× |
-| `#temp` referenced twice | 8,928 — back to the once figure |
+| CTE referenced once | 8,416 |
+| **CTE referenced twice** | **16,832** — exactly 2× |
+| `#temp` referenced twice | 8,867 — back to the once figure |
 
 This is the most common legitimate reason to reach for a `#temp` table, and the
 easiest to prove. Ten references, ten scans.
@@ -111,10 +111,10 @@ data.
 
 | statement | DOP |
 |---|---|
-| control: plain `SELECT ... GROUP BY` | 15 |
-| `INSERT INTO #temp ... SELECT` | 15 |
+| control: plain `SELECT ... GROUP BY` | 8 |
+| `INSERT INTO #temp ... SELECT` | 8 |
 | `INSERT INTO @tablevar ... SELECT` | **1** |
-| `SELECT` joining `@tablevar` | **15** |
+| `SELECT` joining `@tablevar` | **8** |
 
 "Table variables are serial" is the usual shorthand and it is half wrong. The
 restriction is on **modification**, not on reading. A write-once/read-many table
@@ -156,8 +156,8 @@ and you keep the cache.
 
 | rows | data size | creations / 20 calls | |
 |---|---|---|---|
-| 4,000 | 7.66 MB | 0 | cached |
-| **4,200** | **8.04 MB** | **19** | **NOT cached** |
+| 4,000 | 7.66 MB | 0-1 | cached |
+| **4,200** | **8.04 MB** | **13-19** | **INTERMITTENT / NOT cached** |
 | 4,500 | 8.62 MB | 20 | NOT cached |
 | 6,000 | 11.49 MB | 20 | NOT cached |
 
@@ -165,8 +165,11 @@ The boundary sits right at 8 MB. Nothing in your code changes when a
 procedure's temp table crosses it — the procedure simply starts rebuilding its
 temp table on every call and gets slower, with no plan regression to find.
 
-(In one run the 8.04 MB row came back `INTERMITTENT` rather than `NOT cached`.
-It sits directly on the boundary; either verdict there is the finding.)
+The 8.04 MB row is the only figure in this topic that moves between runs. It has
+come back 13, 14 and 19 out of 20 across three runs, flipping between
+`INTERMITTENT` and `NOT cached`. That is not noise to be tidied away — it sits
+directly on the boundary, and a row that cannot make up its mind is exactly what
+a threshold looks like from the inside. Expect it to appear in result set 7.
 
 ### F — collation, and the two hard stops
 
