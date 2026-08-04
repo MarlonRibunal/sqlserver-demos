@@ -51,7 +51,12 @@ BEGIN
         IF EXISTS (SELECT 1 FROM sys.database_scoped_configurations
                    WHERE name = @name AND CAST(value AS nvarchar(256)) <> @val)
         BEGIN
-            SET @sql = N'ALTER DATABASE SCOPED CONFIGURATION SET ' + QUOTENAME(@name)
+            -- NOT QUOTENAME(@name). A scoped configuration name is a keyword in
+            -- this statement, not an identifier: SET [PARAMETER_SENSITIVE_PLAN_
+            -- OPTIMIZATION] = ON fails with "Incorrect syntax near". @name is
+            -- safe unquoted because the EXISTS above just matched it against
+            -- sys.database_scoped_configurations.
+            SET @sql = N'ALTER DATABASE SCOPED CONFIGURATION SET ' + @name
                      + N' = ' + CASE WHEN @val = N'1' THEN N'ON' ELSE N'OFF' END + N';';
             RAISERROR('  %s', 0, 1, @sql) WITH NOWAIT;
             EXEC sys.sp_executesql @sql;
