@@ -55,7 +55,7 @@ GO
 -- Start the Extended Events session if 01-setup managed to create it.
 -- Stopped first, deliberately: stopping discards the ring buffer, and this file
 -- is re-runnable. A previous run that died before its own STOP at the bottom
--- would otherwise leave events behind for usp_BackfillMGFeedback to match
+-- would otherwise leave events behind for usp_BackfillEvidence to match
 -- against the rows of this run.
 BEGIN TRY
     IF EXISTS (SELECT 1 FROM sys.dm_xe_sessions WHERE name = 'Demo_ParamSniffing')
@@ -85,8 +85,15 @@ GO
     - SniffedValue stays the minnow's CustomerID on BOTH rows
     - PlanShape stays "Index Seek + Key Lookup + Sort" on both
     - step 2 ActualRows is ~500,000 against an EstimatedRows in the hundreds
-    - step 2 IdealGrantMB is far above GrantMB  <- that gap is the tempdb spill
-    - step 2 LogicalReads is enormous           <- that is the key lookups
+    - step 2 SpillHint says SPILLED                <- the sort went to tempdb
+    - step 2 LogicalReads is enormous              <- that is the key lookups
+
+  Do NOT read the spill off IdealGrantMB. It is tempting -- ideal above granted
+  looks like "it needed more than it got" -- but the ideal grant is computed
+  from the ESTIMATE, and the estimate here is the minnow's. On step 2 you will
+  see an ideal of well under a megabyte while half a million rows spill to
+  tempdb, with ideal sitting BELOW granted. SpillHint counts sort_warning
+  events instead, which is why it needs the Extended Events session.
 
   sp_recompile, not DBCC FREEPROCCACHE. There is no reason to flush an entire
   instance's plan cache to reset one procedure.
@@ -149,6 +156,14 @@ GO
   Same bad start as scenario A: compile for the minnow, then hammer the whale.
   The difference is that nothing recompiles in between, so the feedback loop has
   a cached plan to attach to and can act.
+
+  This scenario is about the IN-CACHE feedback loop and nothing else. On 2022+
+  there is a second mechanism -- feedback persisted in Query Store, which
+  survives a recompile -- and left switched on it walks into this scenario
+  uninvited: step 1 arrives holding a grant that scenario B taught the plan, and
+  you read a 250 MB grant for fifteen rows before C has done anything at all.
+  01-setup.sql therefore turns MEMORY_GRANT_FEEDBACK_PERSISTENCE off for the
+  whole run. Scenario F is where that mechanism gets looked at, on its own.
 
   Two constraints this scenario is built around:
     1. Feedback lives on the cached plan. Any recompile mid-run wipes the very
@@ -298,6 +313,24 @@ GO
   What to look for:
     - the plan shape differing between the two rows even though neither
       execution recompiled
+
+  Except that it may not, and this scenario now checks rather than promises.
+
+  PSP only builds a dispatcher plan when the optimizer decides this particular
+  query is parameter sensitive. Skew in the data is necessary, not sufficient.
+  Run end to end on SQL Server 2025 against real WideWorldImporters, with the
+  histogram showing 500,000 rows for the whale against ~460 for everyone else,
+  this query got NO dispatcher and NO variants: one cached plan, one
+  sys.dm_exec_query_stats row, and the whale reusing the minnow's compiled
+  value. PSP was working on that instance -- other queries in the same database
+  had variants in sys.query_store_query_variant. This query simply did not
+  qualify.
+
+  So the check below prints what actually happened. A dispatcher count of zero
+  is a real result about your data and build, not a broken scenario, and it is
+  worth more than a bullet point telling you to expect something you will not
+  see.
+
   Skipped automatically on builds without PSP.
 ==============================================================================*/
 PRINT '';
@@ -320,6 +353,20 @@ BEGIN
     EXEC Demo.usp_CustomerLinesByPrice @CustomerID = @Whale;
     EXEC Demo.usp_Capture 'E. PSP enabled', 2, 'Whale (PSP on, no recompile)',
          'Demo.usp_CustomerLinesByPrice', @Whale, 'whale';
+
+    -- Did PSP actually engage? Ask, do not assume.
+    SELECT  CachedPlans = COUNT(*),
+            DispatcherPlans = SUM(CASE WHEN CAST(qp.query_plan AS nvarchar(max)) LIKE '%Dispatcher%'
+                                       THEN 1 ELSE 0 END),
+            Verdict = CASE WHEN SUM(CASE WHEN CAST(qp.query_plan AS nvarchar(max)) LIKE '%Dispatcher%'
+                                         THEN 1 ELSE 0 END) > 0
+                           THEN 'PSP engaged - variant plans in play'
+                           ELSE 'PSP did NOT engage - this query did not qualify' END
+    FROM    sys.dm_exec_cached_plans   AS cp
+    CROSS APPLY sys.dm_exec_sql_text(cp.plan_handle)   AS st
+    CROSS APPLY sys.dm_exec_query_plan(cp.plan_handle) AS qp
+    WHERE   st.objectid = OBJECT_ID('Demo.usp_CustomerLinesByPrice')
+      AND   st.dbid     = DB_ID();
 
     -- Back off, so re-running 02-demo.sql behaves identically.
     ALTER DATABASE SCOPED CONFIGURATION SET PARAMETER_SENSITIVE_PLAN_OPTIMIZATION = OFF;
@@ -477,7 +524,10 @@ IF EXISTS (SELECT 1 FROM sys.system_objects WHERE name = 'query_store_plan_feedb
     EXEC sys.sp_executesql N'
         SELECT  f.plan_id, f.state_desc, f.feedback_data
         FROM    sys.query_store_plan_feedback AS f
-        WHERE   f.feature_desc = ''Memory Grant Feedback'';';
+        JOIN    sys.query_store_plan  AS p ON p.plan_id  = f.plan_id
+        JOIN    sys.query_store_query AS q ON q.query_id = p.query_id
+        WHERE   f.feature_desc = ''Memory Grant Feedback''
+          AND   q.object_id = OBJECT_ID(''Demo.usp_CustomerLinesByPrice'');';
 GO
 
 EXEC sys.sp_recompile N'Demo.usp_CustomerLinesByPrice';
@@ -489,14 +539,10 @@ EXEC Demo.usp_Capture 'F2. persistence ON', 7,
      'AFTER RECOMPILE: first execution, minnow', 'Demo.usp_CustomerLinesByPrice', @Minnow, 'minnow';
 GO
 
--- Put it back where 01-setup.sql found it, so re-running this file behaves
--- identically. 03-cleanup.sql restores it too, from Demo.DemoState.
-DECLARE @orig nvarchar(256) = (SELECT SettingValue FROM Demo.DemoState
-                               WHERE SettingName = 'DSC_MEMORY_GRANT_FEEDBACK_PERSISTENCE');
-IF @orig = N'0'
-    ALTER DATABASE SCOPED CONFIGURATION SET MEMORY_GRANT_FEEDBACK_PERSISTENCE = OFF;
-ELSE
-    ALTER DATABASE SCOPED CONFIGURATION SET MEMORY_GRANT_FEEDBACK_PERSISTENCE = ON;
+-- Back to the demo's baseline, which 01-setup.sql set to OFF so that nothing
+-- outside this scenario sees persisted feedback. Not to YOUR original value --
+-- 03-cleanup.sql does that, from Demo.DemoState.
+ALTER DATABASE SCOPED CONFIGURATION SET MEMORY_GRANT_FEEDBACK_PERSISTENCE = OFF;
 GO
 
 SET NOEXEC OFF;
@@ -516,7 +562,7 @@ GO
 
 -- Fill in MGFeedbackState from the captured actual plans. One pass over the
 -- ring buffer for the whole run -- see the note on the procedure in 01-setup.
-EXEC Demo.usp_BackfillMGFeedback;
+EXEC Demo.usp_BackfillEvidence;
 GO
 
 PRINT '';
@@ -535,8 +581,15 @@ SELECT  r.Scenario,
         GrantMB       = r.GrantMB,
         UsedMB        = r.UsedGrantMB,
         IdealMB       = r.IdealGrantMB,
-        -- Ideal far above granted is the fingerprint of a sort that spilled.
-        SpillHint     = CASE WHEN r.IdealGrantMB > r.GrantMB * 1.5 THEN 'LIKELY SPILLED' ELSE '' END,
+        -- Counted sort_warning events, not an ideal-vs-granted guess. The guess
+        -- was wrong in the one direction that matters: on a sniffed plan the
+        -- ideal grant follows the ESTIMATE, so it lands below the granted size
+        -- while the sort spills, and the flag stayed blank through half a
+        -- million rows going to tempdb.
+        SpillHint     = CASE WHEN r.SpillWarnings > 0
+                                 THEN 'SPILLED x' + CAST(r.SpillWarnings AS varchar(10))
+                             WHEN r.SpillWarnings IS NULL THEN '(no XE)'
+                             ELSE '' END,
         -- Granted far above used is memory reserved and never touched.
         WasteHint     = CASE WHEN r.GrantMB > 5 AND r.GrantMB > r.UsedGrantMB * 2 THEN 'GRANT WASTED' ELSE '' END,
         r.LogicalReads,
@@ -618,7 +671,11 @@ IF EXISTS (SELECT 1 FROM sys.system_objects WHERE name = 'query_store_plan_feedb
                 f.create_time,
                 f.last_updated_time
         FROM    sys.query_store_plan_feedback AS f
+        JOIN    sys.query_store_plan  AS p ON p.plan_id  = f.plan_id
+        JOIN    sys.query_store_query AS q ON q.query_id = p.query_id
         WHERE   f.feature_desc = ''Memory Grant Feedback''
+          AND   q.object_id IN (OBJECT_ID(''Demo.usp_CustomerLinesByPrice''),
+                                OBJECT_ID(''Demo.usp_CustomerLinesByPrice_Recompile''))
         ORDER BY f.last_updated_time DESC;';
 ELSE
     RAISERROR('sys.query_store_plan_feedback does not exist on this build (needs 2022+).', 0, 1) WITH NOWAIT;

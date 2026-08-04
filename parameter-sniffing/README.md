@@ -101,7 +101,7 @@ WHERE name = 'max server memory (MB)';
   the skewed column, `ORDER BY` on unindexed columns.
 - `Demo.usp_CustomerLinesByPrice_Recompile` — same query with `OPTION (RECOMPILE)`.
 - `Demo.DemoResults` + `Demo.usp_Capture` — the evidence collector.
-- `Demo.usp_BackfillMGFeedback` — fills in `MGFeedbackState` from the captured
+- `Demo.usp_BackfillEvidence` — fills in `MGFeedbackState` from the captured
   actual plans, once, after the run. See *Why one column comes from Extended
   Events* below.
 - `Demo.vw_GrantStats` / `Demo.vw_CachedPlan` — for poking around afterwards.
@@ -117,7 +117,7 @@ WHERE name = 'max server memory (MB)';
 | B | Sniff whale, run minnow | Hundreds of MB of grant reserved to return a handful of rows. No spill, no slow query — invisible to a duration-based monitor. |
 | C | Memory grant feedback | The grant corrects itself over repeated executions — overshooting and re-correcting on 2022+. **The plan shape never does.** |
 | D | `OPTION (RECOMPILE)` | Correct plan *and* correct grant in both directions — paid for with a compile per call and nothing accumulating for feedback to learn from. |
-| E | Parameter Sensitive Plan optimization | 2022+ only. The engine caches multiple variants and handles it without recompiling. |
+| E | Parameter Sensitive Plan optimization | 2022+ only. Checks whether PSP built a dispatcher plan and reports the verdict — on the tested 2025 run, this query did not qualify and PSP did not engage. |
 | F | Feedback that outlives the plan | 2022+ only. `sp_recompile` throws the plan away; the learned grant comes back anyway, out of Query Store. |
 
 **`03-cleanup.sql`** — restores the compatibility level, the scoped
@@ -132,9 +132,10 @@ delete.
 Five result sets at the bottom of `02-demo.sql`:
 
 1. **The summary** — one row per execution, with two computed flag columns:
-   `LIKELY SPILLED` when the ideal grant far exceeds what was granted, and
+   `SPILLED xN` counting `sort_warning` events for that execution, and
    `GRANT WASTED` when the grant far exceeds what was used. Those two flags are
-   the two failure modes.
+   the two failure modes. `SPILLED` needs the Extended Events session; there is
+   no DMV that answers "did this execution spill" (see [Design notes](#design-notes)).
 2. **Scenario C trajectory** — `GrantDeltaMB` and `MGFeedbackState` across six
    executions. The states are the engine's own strings, colons and spaces
    included: `No: First Execution`, `No: Accurate Grant`, `Yes: Adjusting`,
@@ -179,6 +180,7 @@ All recorded in `Demo.DemoState` before being changed, all restored by
 | Compatibility level raised to the engine's maximum | WideWorldImporters ships at 130. Row-mode memory grant feedback needs 150; PSP needs 160. |
 | `PARAMETER_SENSITIVE_PLAN_OPTIMIZATION` set `OFF` (2022+) | PSP targets exactly this query shape and would fix scenarios A and B before you saw them fail. Scenario E turns it back on for the contrast. |
 | `ROW_MODE_MEMORY_GRANT_FEEDBACK` set `ON` (2019+) | Scenario C is entirely about this feature. Asserted rather than assumed — if it is off, the grant stays flat and the scenario reads as broken. |
+| `MEMORY_GRANT_FEEDBACK_PERSISTENCE` set `OFF` (2022+) | Persisted feedback is scenario F's subject. Left on it leaks into scenario C, whose first row then shows a 250 MB grant for 15 rows before C has done anything. Scenario F turns it on for one arm. |
 | Query Store set to `READ_WRITE` if it wasn't already (2016+) | Scenario F watches feedback survive a recompile, and Query Store is where it survives. Enabled at its defaults, including the 1 GB storage cap; this demo puts about 1 MB in it. Collected data is never cleared — see below. |
 | `MEMORY_GRANT_FEEDBACK_PERSISTENCE` toggled during scenario F (2022+) | The scenario runs the same sequence with it off and on. Restored at the end of the scenario as well as by cleanup. |
 
@@ -233,8 +235,21 @@ scenario C's climbs, and `MGFeedbackState` stays at `No: First Execution`.
 Nothing accumulates across executions, which is exactly why scenario C's
 self-correcting grant cannot happen here.
 
-**Why one column comes from Extended Events.** Every column in `Demo.DemoResults`
-is read from DMVs immediately after each execution — except `MGFeedbackState`.
+**Why two columns come from Extended Events.** Every column in
+`Demo.DemoResults` is read from DMVs immediately after each execution — except
+`MGFeedbackState` and `SpillWarnings`.
+
+`SpillWarnings` is there because no DMV answers "did this execution spill".
+The obvious proxy — ideal grant far above granted — is not merely imprecise, it
+is backwards for this demo: `last_ideal_grant_kb` is derived from the
+*estimate*, and the estimate on the sniffed plan is the minnow's. A real run
+puts the ideal at 0.53 MB against a 1.00 MB grant while half a million rows
+spill to tempdb, so an ideal-vs-granted flag reports "no spill" in exactly the
+case the demo exists to show. The count comes from `sort_warning` events
+instead, matched to rows by time window — `usp_Capture` runs immediately after
+each execution, so the window is tight.
+
+As for `MGFeedbackState`:
 `IsMemoryGrantFeedbackAdjusted` is a *runtime* attribute: it appears on
 `MemoryGrantInfo` only in an actual execution plan.
 `sys.dm_exec_query_plan` returns the compiled plan and never carries it, so
@@ -251,7 +266,7 @@ on that same plan handle: the attribute is absent from that DMV, not
 So the actual plans are collected by the `query_post_execution_showplan` event —
 pinned by `object_id` to the two demo procedures, not to the database, because
 unfiltered it would capture a showplan for every statement in
-WideWorldImporters. `Demo.usp_BackfillMGFeedback` makes one pass over the ring
+WideWorldImporters. `Demo.usp_BackfillEvidence` makes one pass over the ring
 buffer after the run and matches events to rows on
 `(object_id, granted_memory_kb)`, with ordinal position inside that pair as the
 tiebreaker. `GrantKB` exists on `Demo.DemoResults` to be the exact,
@@ -286,7 +301,7 @@ purpose-built skewed table rather than against WideWorldImporters, and neither
 checked on 2017, 2019, or 2025:
 
 - The `MGFeedbackState` capture path — the event session in step 7,
-  `Demo.usp_Capture`, and `Demo.usp_BackfillMGFeedback` — produced
+  `Demo.usp_Capture`, and `Demo.usp_BackfillEvidence` — produced
   `No: First Execution` → `No: Accurate Grant` → `Yes: Adjusting` →
   `Yes: Stable` across the scenario C loop.
 - Scenario D's plan cache behaviour, run with the procedures verbatim from
@@ -298,3 +313,13 @@ checked on 2017, 2019, or 2025:
   `sys.query_store_plan_feedback` and `is_persisted_feedback_used = true` in the
   event stream. That the control arm ignores already-stored feedback was tested
   separately, with a large value sitting in Query Store.
+
+**All three scripts have since been run end to end on SQL Server 2025
+(17.0.4055.5) against a real WideWorldImporters**, twice — once to find defects
+and once to confirm the fixes. Setup, all six scenarios, and cleanup complete
+with zero errors. Representative numbers from that run: scenario A reuses the
+minnow's `(1060)` plan for 500,000 rows at 1,534,658 logical reads with
+`SPILLED x1`; scenario C climbs 1.00 → 250.49 MB through `Yes: Adjusting` →
+`Yes: Stable` with an identical plan shape on all seven rows; scenario F splits
+1.00 MB against 250.49 MB across the persistence A/B. Scenario E reports that
+PSP did not engage for this query. Still unverified on 2017, 2019, and 2022.

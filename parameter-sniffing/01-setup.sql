@@ -144,6 +144,27 @@ BEGIN
 END
 ELSE
     RAISERROR('No ROW_MODE_MEMORY_GRANT_FEEDBACK on this build. Scenario C needs 2019+ at compat 150+.', 0, 1) WITH NOWAIT;
+
+/*------------------------------------------------------------------------------
+  Persisted feedback is scenario F's subject and nobody else's.
+
+  Left on, it leaks across scenarios: a fresh compile in scenario C arrives
+  pre-loaded with a grant that scenario B taught the plan, and C's first row
+  shows a 250 MB grant for fifteen rows before C has done anything. That is a
+  real 2022+ behaviour, but reading it inside scenario C makes the in-cache
+  feedback loop look like it is doing something it is not.
+
+  So: OFF for the whole run. Scenarios A-E show the in-cache loop only, and
+  scenario F turns it on for one arm and puts it back.
+------------------------------------------------------------------------------*/
+IF EXISTS (SELECT 1 FROM sys.database_scoped_configurations
+           WHERE name = N'MEMORY_GRANT_FEEDBACK_PERSISTENCE')
+BEGIN
+    RAISERROR('Disabling MEMORY_GRANT_FEEDBACK_PERSISTENCE. Scenario F owns this one.', 0, 1) WITH NOWAIT;
+    ALTER DATABASE SCOPED CONFIGURATION SET MEMORY_GRANT_FEEDBACK_PERSISTENCE = OFF;
+END
+ELSE
+    RAISERROR('No MEMORY_GRANT_FEEDBACK_PERSISTENCE on this build. Scenario F needs 2022+.', 0, 1) WITH NOWAIT;
 GO
 
 /*------------------------------------------------------------------------------
@@ -406,13 +427,21 @@ CREATE TABLE Demo.DemoResults
     GrantKB         bigint        NULL,   -- raw last_grant_kb; joins to the XE event
     LogicalReads    bigint        NULL,
     ElapsedMs       bigint        NULL,
+    -- Sort spills. There is no DMV that reports "this execution spilled":
+    -- last_ideal_grant_kb is derived from the ESTIMATE, so on a sniffed plan it
+    -- sits below the granted size even while the sort is spilling to tempdb.
+    -- Back-filled from the sort_warning event, matched by time window.
+    SpillWarnings   int           NULL,
     -- IsMemoryGrantFeedbackAdjusted. Not available from any DMV -- it exists
     -- only in an ACTUAL execution plan, so it is back-filled from Extended
-    -- Events by Demo.usp_BackfillMGFeedback. See the note on that procedure.
+    -- Events by Demo.usp_BackfillEvidence. See the note on that procedure.
     MGFeedbackState nvarchar(50)  NULL,
     ExecutionCount  bigint        NULL,
     PlanGenNum      bigint        NULL,
-    CapturedAt      datetime2(3)  NOT NULL CONSTRAINT DF_DemoResults_CapturedAt DEFAULT SYSDATETIME()
+    CapturedAt      datetime2(3)  NOT NULL CONSTRAINT DF_DemoResults_CapturedAt DEFAULT SYSDATETIME(),
+    -- UTC, because Extended Events timestamps are UTC and the spill back-fill
+    -- matches events to rows by time window.
+    CapturedUtc     datetime2(3)  NOT NULL CONSTRAINT DF_DemoResults_CapturedUtc DEFAULT SYSUTCDATETIME()
 );
 GO
 
@@ -483,7 +512,11 @@ BEGIN
 
         SET @shape = STUFF(
               CASE WHEN @plan.exist('//*[local-name()="RelOp"][@PhysicalOp="Index Seek"]')           = 1 THEN ' + Index Seek'           ELSE '' END
-            + CASE WHEN @plan.exist('//*[local-name()="RelOp"][@PhysicalOp="Key Lookup"]')           = 1 THEN ' + Key Lookup'           ELSE '' END
+            -- A key lookup is NOT PhysicalOp="Key Lookup" in showplan XML. It is
+            -- a Clustered Index Seek carrying Lookup="1", and the graphical plan
+            -- relabels it. Testing for the PhysicalOp never matched, so every
+            -- seek+lookup plan in this demo reported as a bare "Index Seek".
+            + CASE WHEN @plan.exist('//*[local-name()="IndexScan"][@Lookup="1"]')                   = 1 THEN ' + Key Lookup'           ELSE '' END
             + CASE WHEN @plan.exist('//*[local-name()="RelOp"][@PhysicalOp="Clustered Index Scan"]') = 1 THEN ' + Clustered Index Scan' ELSE '' END
             + CASE WHEN @plan.exist('//*[local-name()="RelOp"][@PhysicalOp="Table Scan"]')           = 1 THEN ' + Table Scan'           ELSE '' END
             + CASE WHEN @plan.exist('//*[local-name()="RelOp"][@PhysicalOp="Sort"]')                 = 1 THEN ' + Sort'                 ELSE '' END
@@ -539,7 +572,7 @@ GO
   desync the moment anyone runs an extra EXEC by hand -- which scenario D
   explicitly invites.
 ------------------------------------------------------------------------------*/
-CREATE OR ALTER PROCEDURE Demo.usp_BackfillMGFeedback
+CREATE OR ALTER PROCEDURE Demo.usp_BackfillEvidence
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -604,6 +637,42 @@ BEGIN
     UPDATE Demo.DemoResults
     SET    MGFeedbackState = '(no XE showplan event matched)'
     WHERE  MGFeedbackState = '(pending XE back-fill)';
+
+    /*--------------------------------------------------------------------------
+      Spills.
+
+      There is no DMV answer to "did this execution spill". last_ideal_grant_kb
+      is computed from the ESTIMATE, so on the sniffed plan this demo is built
+      around it reports a fraction of a megabyte while the sort spills half a
+      million rows to tempdb -- ideal ends up BELOW granted, and any
+      ideal-vs-granted comparison reports no spill precisely when the demo is
+      working.
+
+      sort_warning has no object_id to join on, so match by time window: a
+      warning belongs to the row whose capture closed the window it landed in.
+      usp_Capture runs immediately after each execution, so the window is tight.
+      Anything else spilling in this database during the run would land in a
+      window too -- acceptable on the scratch instance this demo requires.
+    --------------------------------------------------------------------------*/
+    ;WITH sw AS
+    (
+        SELECT  EventTimeUTC = e.value('@timestamp', 'datetime2(3)')
+        FROM    @x.nodes('/RingBufferTarget/event') AS n(e)
+        WHERE   e.value('@name', 'sysname') = 'sort_warning'
+    ),
+    windows AS
+    (
+        SELECT  r.ResultID,
+                WindowEnd   = r.CapturedUtc,
+                WindowStart = LAG(r.CapturedUtc) OVER (ORDER BY r.ResultID)
+        FROM    Demo.DemoResults AS r
+    )
+    UPDATE  d
+    SET     SpillWarnings = (SELECT COUNT(*) FROM sw
+                             WHERE sw.EventTimeUTC >  ISNULL(w.WindowStart, '1900-01-01')
+                               AND sw.EventTimeUTC <= w.WindowEnd)
+    FROM    Demo.DemoResults AS d
+    JOIN    windows          AS w ON w.ResultID = d.ResultID;
 END
 GO
 
@@ -664,7 +733,7 @@ GO
   actual execution plans go by. Needs ALTER ANY EVENT SESSION at server level;
   if you do not have it, this step fails harmlessly and the demo still runs on
   DMV evidence alone -- EXCEPT for MGFeedbackState, which has no DMV source at
-  all. See the note on Demo.usp_BackfillMGFeedback in step 5.
+  all. See the note on Demo.usp_BackfillEvidence in step 5.
 
   query_post_execution_showplan is the expensive one and is deliberately pinned
   to the two demo procedures by object_id rather than to the database. Without

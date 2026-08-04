@@ -173,6 +173,10 @@ GO
 DROP PROCEDURE IF EXISTS Demo.usp_CustomerLinesByPrice;
 DROP PROCEDURE IF EXISTS Demo.usp_CustomerLinesByPrice_Recompile;
 DROP PROCEDURE IF EXISTS Demo.usp_Capture;
+DROP PROCEDURE IF EXISTS Demo.usp_BackfillEvidence;
+-- Former name of the same procedure, before it also collected spill evidence.
+-- Dropped here so a database set up by an older version of 01-setup.sql does
+-- not keep a stray object that blocks the schema drop below.
 DROP PROCEDURE IF EXISTS Demo.usp_BackfillMGFeedback;
 DROP VIEW      IF EXISTS Demo.vw_GrantStats;
 DROP VIEW      IF EXISTS Demo.vw_CachedPlan;
