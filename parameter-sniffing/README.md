@@ -1,8 +1,8 @@
 # Parameter sniffing, `RECOMPILE`, and memory grant feedback
 
 **Sample database:** WideWorldImporters · **Min. version:** SQL Server 2017
-(2019+ for scenario C, 2022+ for E and F) · **Status:** ⚠️ Largely untested —
-[see below](#status)
+(2019+ for scenario C, 2022+ for E and F) · **Status:** tested in a limited,
+controlled environment — [see below](#status)
 
 A stored procedure that reliably produces parameter sniffing, and a harness that
 demonstrates it unattended.
@@ -291,14 +291,24 @@ entire instance's plan cache to reset one procedure.
 
 ## Status
 
-⚠️ **Largely untested.** These scripts were written without access to a SQL
-Server instance, and no end-to-end run against WideWorldImporters has been
-verified. Run them against a scratch copy before relying on anything, and expect
-a few hundred MB of data plus transaction log for the 500,000-row load.
+**Tested in a limited, controlled environment.** Everything below describes the
+only configurations these scripts have been run on. Run them against a scratch
+copy before relying on anything, and expect a few hundred MB of data plus
+transaction log for the 500,000-row load.
 
-Two exceptions, both run on SQL Server 2022 (16.x, Linux/Docker) against a small
-purpose-built skewed table rather than against WideWorldImporters, and neither
-checked on 2017, 2019, or 2025:
+**All three scripts have been run end to end on SQL Server 2025 (17.0.4055.5)
+against a real WideWorldImporters**, twice — once to find defects and once to
+confirm the fixes. Setup, all six scenarios, and cleanup complete with zero
+errors. Representative numbers from that run: scenario A reuses the minnow's
+`(1060)` plan for 500,000 rows at 1,534,658 logical reads with `SPILLED x1`;
+scenario C climbs 1.00 → 250.49 MB through `Yes: Adjusting` → `Yes: Stable` with
+an identical plan shape on all seven rows; scenario F splits 1.00 MB against
+250.49 MB across the persistence A/B. Scenario E reports that PSP did not engage
+for this query.
+
+Three earlier partial checks, all run on SQL Server 2022 (16.x, Linux/Docker)
+against a small purpose-built skewed table rather than against
+WideWorldImporters:
 
 - The `MGFeedbackState` capture path — the event session in step 7,
   `Demo.usp_Capture`, and `Demo.usp_BackfillEvidence` — produced
@@ -314,12 +324,20 @@ checked on 2017, 2019, or 2025:
   event stream. That the control arm ignores already-stored feedback was tested
   separately, with a large value sitting in Query Store.
 
-**All three scripts have since been run end to end on SQL Server 2025
-(17.0.4055.5) against a real WideWorldImporters**, twice — once to find defects
-and once to confirm the fixes. Setup, all six scenarios, and cleanup complete
-with zero errors. Representative numbers from that run: scenario A reuses the
-minnow's `(1060)` plan for 500,000 rows at 1,534,658 logical reads with
-`SPILLED x1`; scenario C climbs 1.00 → 250.49 MB through `Yes: Adjusting` →
-`Yes: Stable` with an identical plan shape on all seven rows; scenario F splits
-1.00 MB against 250.49 MB across the persistence A/B. Scenario E reports that
-PSP did not engage for this query. Still unverified on 2017, 2019, and 2022.
+**Unverified on SQL Server 2017 and 2019 entirely, and on 2022 for anything
+beyond the three partial checks above.** No other edition, host platform, or
+non-default instance configuration has been exercised.
+
+## Disclaimer
+
+These scripts are provided as-is, for demonstration and educational purposes
+only, and are tested only in the limited, controlled environment described
+above. Run them only on a scratch instance you can afford to lose, and read
+every script before you run it — you are solely responsible for reviewing,
+testing, and deciding whether to run anything here.
+
+To the fullest extent permitted by law, the author provides these scripts
+WITHOUT WARRANTY OF ANY KIND, express or implied, and shall not be liable for
+any claim, damages, data loss, service interruption, or other liability arising
+from or in connection with their use. See the
+[full disclaimer](../README.md#disclaimer).

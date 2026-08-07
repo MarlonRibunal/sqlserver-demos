@@ -299,3 +299,22 @@ DBCC TRACESTATUS(-1)                        (empty — no flags enabled)
 For contrast, `master` still shows `is_mixed_page_allocation_on = 1`. The
 tempdb-only default is deliberate. If you find these flags in a startup
 parameter list, they are cargo cult.
+
+## Disclaimer
+
+These scripts are provided as-is, for demonstration and educational purposes
+only. They are tested in a **limited, controlled environment** — the single
+configuration named under [Prerequisites](#prerequisites), SQL Server 2022 CU25
+(16.0.4255.1) on 8 schedulers, and nowhere else. No other version, edition,
+scheduler count, or configuration has been exercised, and the measured numbers
+throughout this README are from that one instance rather than a general result.
+
+Run them only on a scratch instance you can afford to lose, and read every
+script before you run it — you are solely responsible for reviewing, testing,
+and deciding whether to run anything here.
+
+To the fullest extent permitted by law, the author provides these scripts
+WITHOUT WARRANTY OF ANY KIND, express or implied, and shall not be liable for
+any claim, damages, data loss, service interruption, or other liability arising
+from or in connection with their use. See the
+[full disclaimer](../README.md#disclaimer).

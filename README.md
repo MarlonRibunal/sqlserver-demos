@@ -88,3 +88,28 @@ is generated with near-uniform distributions, so it can't show data skew), the
 setup script manufactures the conditions **deliberately and says so** in
 comments. A demo that admits what it constructed is worth more than one claiming
 to have found it in the wild.
+
+## Disclaimer
+
+These scripts are provided as-is, for demonstration and educational purposes
+only. They have been tested in a **limited, controlled environment** — the
+specific SQL Server versions and configurations named in each topic README, and
+nowhere else. They are not production-ready, and they have not been validated
+against any other version, edition, configuration, or workload.
+
+Run them only on a scratch instance you can afford to lose. Read every script
+before you run it. You are solely responsible for reviewing, testing, and
+deciding whether to run anything here.
+
+To the fullest extent permitted by law, the author provides this repository
+WITHOUT WARRANTY OF ANY KIND, express or implied, including but not limited to
+the warranties of merchantability, fitness for a particular purpose, and
+non-infringement. In no event shall the author be liable for any claim,
+damages, data loss, service interruption, or other liability, whether in an
+action of contract, tort, or otherwise, arising from, out of, or in connection
+with these scripts or their use.
+
+## License
+
+[MIT](LICENSE). The as-is and no-liability terms in the licence apply in
+addition to the disclaimer above.
