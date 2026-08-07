@@ -1,5 +1,7 @@
 # SQL Server demo scripts
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Self-contained, runnable demonstrations of SQL Server behaviour — one folder per
 topic. Each folder has its own README with prerequisites, run order, and what to
 expect in the output.
