@@ -29,6 +29,7 @@ expect in the output.
 | [Catch-all queries: optional parameters, five ways](catch-all-queries/) | none — creates its own | 2016 |
 | [Partition elimination traps](partition-elimination/) | none — creates its own | 2016 SP1 |
 | [Statistics sampling and skew](statistics-sampling/) | none — creates its own | 2016 SP1 CU4 |
+| [RCSI and snapshot isolation: readers, writers, and the version store](rcsi-snapshot-isolation/) | none — creates its own | 2016 |
 
 ## How these are built
 
