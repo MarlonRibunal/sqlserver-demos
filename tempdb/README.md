@@ -26,8 +26,7 @@ measure them directly. Scenarios C through F are the bill.
 
 ## What setup changes on your instance
 
-Nothing. This is the one topic in this repo where the "what setup mutates"
-section is empty:
+Nothing outside the database it creates:
 
 - no compatibility level changed
 - no database scoped configuration changed
