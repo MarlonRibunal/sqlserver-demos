@@ -16,6 +16,7 @@ expect in the output.
 | [The ascending-key problem: estimates for rows statistics haven't seen](ascending-key/) | none — creates its own | 2016 SP2 |
 | [Implicit conversions: when a type mismatch costs a scan](implicit-conversion/) | none — creates its own | 2016 |
 | [Non-SARGable predicates: which functions on a column cost a seek](non-sargable-predicates/) | none — creates its own | 2016 |
+| [Lock escalation: the threshold, and what does and doesn't avoid it](lock-escalation/) | none — creates its own | 2016 |
 
 ## How these are built
 
