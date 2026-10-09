@@ -24,6 +24,7 @@ expect in the output.
 | [Missing-index suggestions: what the DMVs ask for, and what to build instead](missing-index-suggestions/) | none — creates its own | 2016 |
 | ["Slow in the app, fast in SSMS": SET options and the plan cache](slow-in-app-fast-in-ssms/) | none — creates its own | 2016 |
 | [Minimal logging: when bulk inserts really are cheap](minimal-logging/) | none — creates its own | 2016 |
+| [Correlated predicates: when two columns aren't independent](correlated-predicates/) | none — creates its own | 2016 SP1 |
 
 ## How these are built
 
