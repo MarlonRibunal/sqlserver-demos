@@ -27,6 +27,7 @@ expect in the output.
 | [Correlated predicates: when two columns aren't independent](correlated-predicates/) | none — creates its own | 2016 SP1 |
 | [Memory grants sized by declared width](memory-grant-declared-width/) | none — creates its own | 2016 (2019+ for C, 2022 for D) |
 | [Catch-all queries: optional parameters, five ways](catch-all-queries/) | none — creates its own | 2016 |
+| [Partition elimination traps](partition-elimination/) | none — creates its own | 2016 SP1 |
 
 ## How these are built
 
