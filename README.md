@@ -26,6 +26,7 @@ expect in the output.
 | [Minimal logging: when bulk inserts really are cheap](minimal-logging/) | none — creates its own | 2016 |
 | [Correlated predicates: when two columns aren't independent](correlated-predicates/) | none — creates its own | 2016 SP1 |
 | [Memory grants sized by declared width](memory-grant-declared-width/) | none — creates its own | 2016 (2019+ for C, 2022 for D) |
+| [Catch-all queries: optional parameters, five ways](catch-all-queries/) | none — creates its own | 2016 |
 
 ## How these are built
 
