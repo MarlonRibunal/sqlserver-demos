@@ -30,6 +30,7 @@ expect in the output.
 | [Partition elimination traps](partition-elimination/) | none — creates its own | 2016 SP1 |
 | [Statistics sampling and skew](statistics-sampling/) | none — creates its own | 2016 SP1 CU4 |
 | [RCSI and snapshot isolation: readers, writers, and the version store](rcsi-snapshot-isolation/) | none — creates its own | 2016 |
+| [Blocking chains: finding the head](blocking-chains/) | none — creates its own | 2016 |
 
 ## How these are built
 
