@@ -20,6 +20,7 @@ expect in the output.
 | [Heaps: forwarded records, and the pages a heap keeps](heap-forwarded-records/) | none — creates its own | 2016 |
 | [Key lookups and the tipping point](tipping-point/) | none — creates its own | 2016 |
 | [Scalar UDF inlining: what SQL Server 2019 changed, and what it didn't](scalar-udf-inlining/) | none — creates its own | 2019 |
+| [Columnstore: the delta store, and the rowgroups a query can skip](columnstore-delta-store/) | none — creates its own | 2016 SP1 |
 
 ## How these are built
 
