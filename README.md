@@ -19,6 +19,7 @@ expect in the output.
 | [Lock escalation: the threshold, and what does and doesn't avoid it](lock-escalation/) | none — creates its own | 2016 |
 | [Heaps: forwarded records, and the pages a heap keeps](heap-forwarded-records/) | none — creates its own | 2016 |
 | [Key lookups and the tipping point](tipping-point/) | none — creates its own | 2016 |
+| [Scalar UDF inlining: what SQL Server 2019 changed, and what it didn't](scalar-udf-inlining/) | none — creates its own | 2019 |
 
 ## How these are built
 
