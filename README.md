@@ -42,6 +42,9 @@ fixes.
 - a big update locks the whole table → [lock escalation](lock-escalation/)
 - readers wait for writers, or `NOLOCK` everywhere → [RCSI and snapshot isolation](rcsi-snapshot-isolation/)
 
+**"Duplicate rows" / "primary key violations under load" / "the counter is wrong"**
+- two sessions insert the same new row, or overwrite each other's update → [upsert race conditions](upsert-race-conditions/)
+
 **"Should I rebuild / add this index?"**
 - the maintenance job says the index is fragmented → [index fragmentation](index-fragmentation/)
 - the missing-index DMVs suggest something → [missing-index suggestions](missing-index-suggestions/)
@@ -80,6 +83,7 @@ fixes.
 | [Blocking chains: finding the head](blocking-chains/) | none — creates its own | 2016 |
 | ["Why is my transaction log full?"](transaction-log-full/) | none — creates its own | 2016 SP2 |
 | [Query Store: catching a plan regression, forcing the fix, and watching it break](query-store-regression/) | none — creates its own | 2016 (2022 for E) |
+| [Upsert race conditions: IF EXISTS, MERGE, and the locks that make them safe](upsert-race-conditions/) | none — creates its own | 2016 SP1 |
 
 ## Running them
 
