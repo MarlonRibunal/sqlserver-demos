@@ -173,7 +173,9 @@ DECLARE @d nvarchar(300) = N'used ' + CAST(@u AS nvarchar(20)) + N' MB after CHE
     + N' (the holder is session ' + ISNULL(CAST(@spid AS nvarchar(10)), N'?') + N')';
 INSERT Demo.Verdicts VALUES ('B. Open transaction', 'one open transaction, ~200 MB of committed work', @d,
     'ACTIVE_TRANSACTION; the oldest transaction is the holder''s',
-    CASE WHEN @w = N'ACTIVE_TRANSACTION' AND @u >= 150 AND @oldestSpid = @spid THEN 'PINNED BY ONE SESSION' ELSE 'unexpected' END);
+    -- At least half of the ~200 MB written is still held. 2022 held 226 MB,
+    -- 2019 127 MB; either way it is many times what a free log holds (B2).
+    CASE WHEN @w = N'ACTIVE_TRANSACTION' AND @u >= 100 AND @oldestSpid = @spid THEN 'PINNED BY ONE SESSION' ELSE 'unexpected' END);
 
 
 /*==============================================================================

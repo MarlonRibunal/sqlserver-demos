@@ -67,13 +67,19 @@ fi
 # -W -s'|': trimmed, pipe-separated output, which the checks below parse.
 sqlcmd+=(-S localhost -U sa -P "$password" -I -W -s '|')
 
+# Accepting a login is not enough: a freshly started instance answers before
+# tempdb and the system databases are online, and the first script then
+# fails with Msg 615. Wait for every database to be ONLINE and for tempdb to
+# take a #table.
+ready_check="SET NOCOUNT ON; CREATE TABLE #ready (i int);
+IF EXISTS (SELECT 1 FROM sys.databases WHERE state_desc <> 'ONLINE') RAISERROR('not ready', 16, 1);"
 ready=0
 for _ in $(seq 1 90); do
-    if docker exec "$container" "${sqlcmd[@]}" -Q "SELECT 1" >/dev/null 2>&1; then ready=1; break; fi
+    if docker exec "$container" "${sqlcmd[@]}" -b -Q "$ready_check" >/dev/null 2>&1; then ready=1; break; fi
     sleep 1
 done
 if [[ $ready -ne 1 ]]; then
-    echo "ERROR $topic: SQL Server in $container did not accept connections within 90 s" >&2
+    echo "ERROR $topic: SQL Server in $container was not ready (all databases online) within 90 s" >&2
     exit 3
 fi
 

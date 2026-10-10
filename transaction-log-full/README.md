@@ -100,6 +100,10 @@ The two questions to ask about any full log:
 
 When the transaction commits, the next checkpoint frees it all (16.7 MB).
 
+On SQL Server 2019 (in CI) the same step held 127 MB rather than 226. That's
+less, but still pinned, so the verdict asks for at least half of what was
+written.
+
 ### C — shrinking a log that is held
 
 | | log file |
