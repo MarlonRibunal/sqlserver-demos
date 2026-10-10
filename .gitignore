@@ -7,3 +7,4 @@ out.txt
 
 # macOS
 .DS_Store
+.env

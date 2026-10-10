@@ -26,6 +26,7 @@
      Demo.IndexSnapshots     - fragmentation, density and reads, per table
      Demo.usp_Record         - the verdict collector used by 02
      Demo.usp_BuildTable     - builds a table in one of four shapes
+     Demo.usp_WaitForFileSpace - waits for deferred drops to free a file
      Demo.usp_Snapshot       - measures a table and records a snapshot
      Demo.fn_RuleSays        - the "5% / 30%" rule, as a function
      Demo.Dense              - the control: in order, full pages
@@ -198,6 +199,32 @@ END
 GO
 
 /*------------------------------------------------------------------------------
+  Demo.usp_WaitForFileSpace -- wait (at most 120 seconds) until the used space
+  in data file @File is at most @MaxUsedPages.
+
+  Dropping a table bigger than 128 extents is a DEFERRED drop: the DROP
+  returns at once and a background task frees the extents afterwards. A
+  SHRINKFILE run before that has finished sees only part of the space as
+  free, and the "scattered" build then comes out only partly reversed -- on
+  the tested build, a re-run of 02-demo.sql once produced a table only ~20%
+  fragmented that way. Waiting for the file to empty first fixes it.
+------------------------------------------------------------------------------*/
+CREATE OR ALTER PROCEDURE Demo.usp_WaitForFileSpace
+    @File         sysname,
+    @MaxUsedPages int
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @waited int = 0;
+    WHILE FILEPROPERTY(@File, 'SpaceUsed') > @MaxUsedPages AND @waited < 120000
+    BEGIN
+        WAITFOR DELAY '00:00:00.250';
+        SET @waited += 250;
+    END
+END
+GO
+
+/*------------------------------------------------------------------------------
   Demo.usp_BuildTable -- (re)builds @Table in @FileGroup in one of four shapes.
 
   Every shape ends with the SAME 100,000 rows of the SAME width, so that any
@@ -261,6 +288,13 @@ BEGIN
 
     IF @Shape = 'scattered'
     BEGIN
+        -- Start from an empty, minimal file, so the filler is allocated at
+        -- the front and the table after it. Dropped tables over 128 extents
+        -- are freed by a background task, so wait for that before shrinking.
+        DROP TABLE IF EXISTS Demo.ShrinkFiller;
+        EXEC Demo.usp_WaitForFileSpace @file, 16;
+        DBCC SHRINKFILE (@file, 1) WITH NO_INFOMSGS;
+
         /*----------------------------------------------------------------------
           The classic way to fragment an index without touching its density:
           shrink the file it lives in.
@@ -306,6 +340,12 @@ BEGIN
     IF @Shape = 'scattered'
     BEGIN
         DROP TABLE Demo.ShrinkFiller;
+        -- Wait until only the table itself is left in the file, so the hole
+        -- the filler leaves really is free when the shrink runs.
+        DECLARE @tablePages int =
+            (SELECT SUM(used_page_count) FROM sys.dm_db_partition_stats WHERE object_id = OBJECT_ID(@Table));
+        DECLARE @limit int = @tablePages + 200;
+        EXEC Demo.usp_WaitForFileSpace @file, @limit;
         DBCC SHRINKFILE (@file, 1) WITH NO_INFOMSGS;
     END
 

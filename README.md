@@ -32,6 +32,42 @@ expect in the output.
 | [RCSI and snapshot isolation: readers, writers, and the version store](rcsi-snapshot-isolation/) | none — creates its own | 2016 |
 | [Blocking chains: finding the head](blocking-chains/) | none — creates its own | 2016 |
 
+## Running them
+
+The fastest way to a scratch instance is the `docker-compose.yml` in this
+repo. It runs SQL Server 2019, 2022 and 2025 Developer edition side by side.
+
+```
+cp .env.example .env              # then choose your own MSSQL_SA_PASSWORD
+docker compose up -d sql2022      # or sql2019, sql2025
+tools/run-topic.sh tempdb         # one topic, end to end
+tools/run-all.sh                  # every topic
+```
+
+`tools/run-topic.sh` runs a topic exactly as its README says: setup, the demo,
+**the demo again** (every demo must be re-runnable without re-running setup),
+then cleanup. It reports **PASS**, **WARN** or **FAIL**:
+
+- **FAIL**: a script raised an error, or the demo's final "anything that did
+  not behave as predicted" result set has a row in it.
+- **WARN**: the only rows there are documented environment caveats, such as
+  `INCONCLUSIVE`, `INTERMITTENT` or `SKIPPED`.
+
+Every topic carries its own predictions and checks them, so a PASS means the
+behaviour the README describes really happened on that instance. It isn't
+just "the script ran". It defaults to the `sqldemo-2022` container. Pass
+another container name as a second argument, or set `SQL_CONTAINER`.
+
+Prefer SSMS or Azure Data Studio? Open each script and run it whole (F5).
+Every README says what to expect.
+
+### Continuous integration
+
+[`.github/workflows/demos.yml`](.github/workflows/demos.yml) runs every topic
+through `tools/run-topic.sh` on SQL Server 2019, 2022 and 2025, on every push.
+A topic that needs something the CI containers don't have, such as a sample
+database, has a `.ci-skip` file saying so.
+
 ## How these are built
 
 Every topic follows the same shape, so once you've run one you know how to run
@@ -88,8 +124,13 @@ settings by design. Use a scratch instance.
 3. Write `<topic-name>/README.md` covering: prerequisites, run order with rough
    timings, what each scenario shows, what setup changes on the database, and
    how to read the output.
-4. Add a row to the **Topics** table above.
-5. Note any client-specific requirements (SSMS settings, sqlcmd fallbacks) in
+4. End `02-demo.sql` with a result set headed
+   `=== N. ANYTHING THAT DID NOT BEHAVE AS PREDICTED ===` that lists every
+   check whose verdict was wrong. That is what `tools/run-topic.sh` and CI read.
+5. Run `tools/run-topic.sh <topic-name>` until it reports PASS, on every
+   version the topic claims to support.
+6. Add a row to the **Topics** table above.
+7. Note any client-specific requirements (SSMS settings, sqlcmd fallbacks) in
    the topic README — not everyone runs SSMS.
 
 ## Sample databases

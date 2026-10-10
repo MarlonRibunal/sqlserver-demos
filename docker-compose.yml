@@ -1,0 +1,40 @@
+# Local SQL Server instances for running the demos in this repo.
+#
+#   cp .env.example .env        # then set a strong MSSQL_SA_PASSWORD
+#   docker compose up -d sql2022
+#   tools/run-topic.sh tempdb   # runs one topic end to end against sqldemo-2022
+#
+# Developer edition, free for non-production use. Each version listens on its
+# own host port so they can run side by side. Nothing is persisted: these are
+# scratch instances, which is what every demo in this repo assumes.
+
+services:
+  sql2019:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sqldemo-2019
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD in .env}
+    ports:
+      - "14319:1433"
+
+  sql2022:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqldemo-2022
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD in .env}
+    ports:
+      - "14322:1433"
+
+  sql2025:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: sqldemo-2025
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD in .env}
+    ports:
+      - "14325:1433"

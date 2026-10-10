@@ -217,6 +217,12 @@ PRINT '';
 PRINT '--- SCENARIO D: cold reads (taking FragmentationDemo offline and online) ---';
 GO
 
+-- Let any deferred drop still freeing FG_Work (from a previous run's
+-- scenario E) finish first, so the offline/online cycle starts from a quiet
+-- database. See Demo.usp_WaitForFileSpace in 01-setup.sql.
+EXEC Demo.usp_WaitForFileSpace N'FG_Work', 16;
+GO
+
 USE master;
 GO
 ALTER DATABASE FragmentationDemo SET OFFLINE WITH ROLLBACK IMMEDIATE;
@@ -433,6 +439,9 @@ BEGIN
 END
 
 DROP TABLE IF EXISTS Demo.Victim;
+GO
+-- Leave FG_Work empty for the next run, not merely "being emptied".
+EXEC Demo.usp_WaitForFileSpace N'FG_Work', 16;
 GO
 
 
