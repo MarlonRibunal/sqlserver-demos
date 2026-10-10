@@ -111,7 +111,10 @@ DECLARE @d2 nvarchar(200) = CAST(@nCalls AS nvarchar(20)) + N' calls for ' + CAS
     + CAST(@nMs AS nvarchar(10)) + N' ms';
 DECLARE @v2 varchar(24) =
     CASE WHEN @nUdf = 1 AND @nDop = 1 AND @nCalls >= @rows
-              AND @nReason = N'TSQLUserDefinedFunctionsNotParallelizable' THEN 'ROW BY ROW, SERIAL'
+              -- 2022 and 2025 name the UDF; 2019 reports the same serial
+              -- plan as CouldNotGenerateValidParallelPlan (seen in CI).
+              AND @nReason IN (N'TSQLUserDefinedFunctionsNotParallelizable', N'CouldNotGenerateValidParallelPlan')
+              THEN 'ROW BY ROW, SERIAL'
          ELSE 'unexpected' END;
 
 DECLARE @ratio decimal(18,1) = @nMs * 1.0 / NULLIF(@iMs, 0);

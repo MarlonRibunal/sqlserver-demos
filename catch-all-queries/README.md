@@ -22,7 +22,8 @@ the statement returns its result rather than assigning it to variables. Never
 ## Prerequisites
 
 - SQL Server 2016 or later. Developed and tested on **2022 CU25
-  (16.0.4255.1)**.
+  (16.0.4255.1)**, and run in CI on 2019, 2022 and 2025. Scenario A behaves
+  differently on 2025 at compatibility level 170; see below.
 - No sample database. `01-setup.sql` creates its own database, `CatchAllDemo`.
 - Permission to `CREATE DATABASE`, and `VIEW SERVER STATE` for the DMVs.
 
@@ -92,6 +93,14 @@ there's a customer filter (1,831 reads against 96), and ruinous when there
 isn't: the date-only search looked up **every row in the table**, 3,001,773
 reads against 10,218. One plan fits none of the four searches well.
 
+**On SQL Server 2025 this changes.** At compatibility level 170, 2025 adds
+*optional parameter plan optimization* (OPPO), aimed at exactly this pattern.
+In the CI run on 2025, the catch-all's date search read **11,862** pages
+against 10,218 for dynamic SQL, and its customer search 107 against 93. On
+2025 at level 170, the catch-all is no longer the problem this scenario
+shows, and the demo's verdict checks for that instead. On every earlier
+version, or a 2025 database at a lower level, it is.
+
 ### B — `OPTION (RECOMPILE)`
 
 With `RECOMPILE`, every call is compiled with its actual argument values
@@ -157,7 +166,8 @@ predicted, which should be empty.**
 
 1. **A catch-all `WHERE` caches one plan for every combination of filters.**
    A date search through the customer-shaped plan read 3,001,773 pages
-   instead of 10,218.
+   instead of 10,218. SQL Server 2025 at compatibility level 170 fixes this
+   pattern with OPPO: 11,862 pages.
 2. **`OPTION (RECOMPILE)` fixes it** by planning each call for its own values,
    at the cost of a compile per call.
 3. **Unless the statement assigns to variables.** Then the values weren't

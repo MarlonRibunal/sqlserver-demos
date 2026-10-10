@@ -95,6 +95,9 @@ and the plan is forced serial:
 NonParallelPlanReason="TSQLUserDefinedFunctionsNotParallelizable"
 ```
 
+On SQL Server 2019 the plan is just as serial, but the reason is reported
+as `CouldNotGenerateValidParallelPlan` instead.
+
 **200× slower**, for an identical function body. Before 2019 this was the only
 way a scalar UDF could run.
 

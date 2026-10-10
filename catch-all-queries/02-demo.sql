@@ -90,10 +90,22 @@ DECLARE @caDate bigint = (SELECT LogicalReads FROM Demo.Calls WHERE Variant = 'C
 DECLARE @dyDate bigint = (SELECT LogicalReads FROM Demo.Calls WHERE Variant = 'Dynamic'  AND Search = 'date');
 DECLARE @caCust bigint = (SELECT LogicalReads FROM Demo.Calls WHERE Variant = 'CatchAll' AND Search = 'customer');
 DECLARE @dyCust bigint = (SELECT LogicalReads FROM Demo.Calls WHERE Variant = 'Dynamic'  AND Search = 'customer');
-DECLARE @d nvarchar(300) = N'date search: ' + CAST(@caDate AS nvarchar(20)) + N' reads vs ' + CAST(@dyDate AS nvarchar(20))
+-- SQL Server 2025 adds optional parameter plan optimization (OPPO) at
+-- compatibility level 170, aimed at exactly this pattern. On the 2025 CI
+-- run the catch-all came within a few percent of the dynamic version, so
+-- the prediction depends on the compatibility level.
+DECLARE @compat int = (SELECT compatibility_level FROM sys.databases WHERE database_id = DB_ID());
+DECLARE @d nvarchar(300) = N'compatibility level ' + CAST(@compat AS nvarchar(10)) + N'; date search: '
+    + CAST(@caDate AS nvarchar(20)) + N' reads vs ' + CAST(@dyDate AS nvarchar(20))
     + N' dynamic; customer search: ' + CAST(@caCust AS nvarchar(20)) + N' vs ' + CAST(@dyCust AS nvarchar(20));
-INSERT Demo.Verdicts VALUES ('A. The catch-all', 'one plan for every combination', @d, 'far worse than the dynamic version',
-    CASE WHEN @caDate >= @dyDate * 50 AND @caCust >= @dyCust * 5 THEN 'ONE PLAN FITS NONE' ELSE 'unexpected' END);
+IF @compat >= 170
+    INSERT Demo.Verdicts VALUES ('A. The catch-all', 'one plan for every combination', @d,
+        'level 170+ (OPPO): close to the dynamic version',
+        CASE WHEN @caDate <= @dyDate * 1.5 AND @caCust <= @dyCust * 2 THEN 'OPPO HANDLES IT' ELSE 'unexpected' END);
+ELSE
+    INSERT Demo.Verdicts VALUES ('A. The catch-all', 'one plan for every combination', @d,
+        'far worse than the dynamic version',
+        CASE WHEN @caDate >= @dyDate * 50 AND @caCust >= @dyCust * 5 THEN 'ONE PLAN FITS NONE' ELSE 'unexpected' END);
 GO
 
 
