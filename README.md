@@ -45,6 +45,9 @@ fixes.
 - the maintenance job says the index is fragmented → [index fragmentation](index-fragmentation/)
 - the missing-index DMVs suggest something → [missing-index suggestions](missing-index-suggestions/)
 
+**"The transaction log is full" / "the log file won't stop growing"**
+- no log backups, an open transaction, a shrink that won't shrink, thousands of VLFs → [why is my transaction log full?](transaction-log-full/)
+
 **"The load is slow and the log is huge"**
 - bulk inserts that should be minimally logged → [minimal logging](minimal-logging/)
 - tempdb contention, or when to use a `#temp` table → [tempdb](tempdb/)
@@ -74,6 +77,7 @@ fixes.
 | [Statistics sampling and skew](statistics-sampling/) | none — creates its own | 2016 SP1 CU4 |
 | [RCSI and snapshot isolation: readers, writers, and the version store](rcsi-snapshot-isolation/) | none — creates its own | 2016 |
 | [Blocking chains: finding the head](blocking-chains/) | none — creates its own | 2016 |
+| ["Why is my transaction log full?"](transaction-log-full/) | none — creates its own | 2016 SP2 |
 
 ## Running them
 
