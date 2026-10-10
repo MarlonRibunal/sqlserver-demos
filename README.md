@@ -17,6 +17,7 @@ fixes.
 - only for the newest data → [the ascending-key problem](ascending-key/)
 - "slow in the app, fast in SSMS" → [SET options and the plan cache](slow-in-app-fast-in-ssms/)
 - a search screen with optional filters → [catch-all queries](catch-all-queries/)
+- it was fine yesterday and nothing was deployed → [Query Store: plan regressions](query-store-regression/)
 
 **"This query reads far more than it should"**
 - a function or expression on the column → [non-SARGable predicates](non-sargable-predicates/)
@@ -78,6 +79,7 @@ fixes.
 | [RCSI and snapshot isolation: readers, writers, and the version store](rcsi-snapshot-isolation/) | none — creates its own | 2016 |
 | [Blocking chains: finding the head](blocking-chains/) | none — creates its own | 2016 |
 | ["Why is my transaction log full?"](transaction-log-full/) | none — creates its own | 2016 SP2 |
+| [Query Store: catching a plan regression, forcing the fix, and watching it break](query-store-regression/) | none — creates its own | 2016 (2022 for E) |
 
 ## Running them
 
