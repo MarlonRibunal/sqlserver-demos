@@ -6,6 +6,49 @@ Self-contained, runnable demonstrations of SQL Server behaviour — one folder p
 topic. Each folder has its own README with prerequisites, run order, and what to
 expect in the output.
 
+## Start from the symptom
+
+You probably arrived with a problem, not a feature name. Find it below; each
+link is a topic that reproduces that problem on purpose and measures the
+fixes.
+
+**"It's fast sometimes and slow other times"**
+- the plan was compiled for somebody else's parameter → [parameter sniffing](parameter-sniffing/)
+- only for the newest data → [the ascending-key problem](ascending-key/)
+- "slow in the app, fast in SSMS" → [SET options and the plan cache](slow-in-app-fast-in-ssms/)
+- a search screen with optional filters → [catch-all queries](catch-all-queries/)
+
+**"This query reads far more than it should"**
+- a function or expression on the column → [non-SARGable predicates](non-sargable-predicates/)
+- the parameter's type doesn't match the column → [implicit conversions](implicit-conversion/)
+- thousands of key lookups, or a scan where you expected a seek → [the tipping point](tipping-point/)
+- a scalar function in the query → [scalar UDF inlining](scalar-udf-inlining/)
+- a date-partitioned table and the query reads every partition → [partition elimination](partition-elimination/)
+- a heap that keeps getting slower to scan → [forwarded records](heap-forwarded-records/)
+- a columnstore table that isn't as fast or small as it should be → [the delta store](columnstore-delta-store/)
+
+**"The estimates in the plan are nowhere near the actual rows"**
+- rows newer than the statistics → [ascending key](ascending-key/)
+- two related columns in one `WHERE` → [correlated predicates](correlated-predicates/)
+- skewed data, rare values, values that don't exist → [statistics sampling](statistics-sampling/)
+- a `#temp` table vs a table variable → [tempdb](tempdb/)
+
+**"Queries wait for memory" (`RESOURCE_SEMAPHORE`)**
+- grants far bigger than the data → [memory grants sized by declared width](memory-grant-declared-width/)
+
+**"Everything is blocked" / "we get deadlocks"**
+- find the session holding everyone up → [blocking chains](blocking-chains/)
+- a big update locks the whole table → [lock escalation](lock-escalation/)
+- readers wait for writers, or `NOLOCK` everywhere → [RCSI and snapshot isolation](rcsi-snapshot-isolation/)
+
+**"Should I rebuild / add this index?"**
+- the maintenance job says the index is fragmented → [index fragmentation](index-fragmentation/)
+- the missing-index DMVs suggest something → [missing-index suggestions](missing-index-suggestions/)
+
+**"The load is slow and the log is huge"**
+- bulk inserts that should be minimally logged → [minimal logging](minimal-logging/)
+- tempdb contention, or when to use a `#temp` table → [tempdb](tempdb/)
+
 ## Topics
 
 | Topic | Sample database | Min. version |
