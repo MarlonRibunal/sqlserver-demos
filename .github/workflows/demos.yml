@@ -1,0 +1,57 @@
+# Runs every topic end to end against SQL Server 2019, 2022 and 2025.
+#
+# Each job starts one SQL Server container and runs tools/run-topic.sh for
+# one topic: setup, the demo twice (it must be re-runnable), cleanup. A job
+# fails if any script raised an error, or if a demo's "ANYTHING THAT DID NOT
+# BEHAVE AS PREDICTED" result set has a row whose verdict is not one of the
+# documented environment warnings (INCONCLUSIVE, INTERMITTENT, SKIPPED).
+#
+# Topics with a .ci-skip file are skipped (it says why).
+
+name: demos
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  topics:
+    name: list topics
+    runs-on: ubuntu-latest
+    outputs:
+      topics: ${{ steps.list.outputs.topics }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: |
+          topics=$(for d in */; do [ -f "$d/01-setup.sql" ] && [ ! -f "$d/.ci-skip" ] && echo "${d%/}"; done \
+                   | jq -R . | jq -cs .)
+          echo "topics=$topics" >> "$GITHUB_OUTPUT"
+
+  run:
+    name: ${{ matrix.topic }} on ${{ matrix.version }}
+    needs: topics
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['2019', '2022', '2025']
+        topic: ${{ fromJson(needs.topics.outputs.topics) }}
+    env:
+      MSSQL_SA_PASSWORD: CI.Only.Strong.Password1
+      SQL_CONTAINER: sqldemo
+    steps:
+      - uses: actions/checkout@v4
+      - name: start SQL Server ${{ matrix.version }}
+        run: |
+          docker run -d --name sqldemo \
+            -e ACCEPT_EULA=Y -e MSSQL_PID=Developer -e MSSQL_SA_PASSWORD="$MSSQL_SA_PASSWORD" \
+            mcr.microsoft.com/mssql/server:${{ matrix.version }}-latest
+      - name: run ${{ matrix.topic }}
+        run: tools/run-topic.sh "${{ matrix.topic }}" sqldemo
+      - name: SQL Server log on failure
+        if: failure()
+        run: docker logs sqldemo 2>&1 | tail -100
