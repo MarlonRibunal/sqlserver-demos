@@ -37,6 +37,9 @@ fixes.
 **"Queries wait for memory" (`RESOURCE_SEMAPHORE`)**
 - grants far bigger than the data → [memory grants sized by declared width](memory-grant-declared-width/)
 
+**"`CXPACKET` is my top wait" / "small queries eat all the CPU"**
+- a parallel query no faster than serial, skew, the cost threshold, why a plan stays serial → [parallelism](parallelism/)
+
 **"Everything is blocked" / "we get deadlocks"**
 - find the session holding everyone up → [blocking chains](blocking-chains/)
 - `Msg 1205`, "chosen as the deadlock victim" → [deadlock patterns](deadlock-patterns/)
@@ -86,6 +89,7 @@ fixes.
 | [Query Store: catching a plan regression, forcing the fix, and watching it break](query-store-regression/) | none — creates its own | 2016 (2022 for E) |
 | [Upsert race conditions: IF EXISTS, MERGE, and the locks that make them safe](upsert-race-conditions/) | none — creates its own | 2016 SP1 |
 | [Deadlock patterns: making them on cue, fixing them, and reading the graphs](deadlock-patterns/) | none — creates its own | 2017 |
+| [Parallelism: what it buys, what it costs, and when it goes wrong](parallelism/) | none — creates its own | 2019 |
 
 ## Running them
 
