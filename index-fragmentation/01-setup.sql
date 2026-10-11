@@ -255,7 +255,8 @@ GO
 CREATE OR ALTER PROCEDURE Demo.usp_BuildTable
     @Shape     varchar(10),
     @Table     sysname,          -- schema-qualified, e.g. 'Demo.Dense'
-    @FileGroup sysname
+    @FileGroup sysname,
+    @Attempt   int = 1           -- 'scattered' retries itself; see the end
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -425,6 +426,19 @@ BEGIN
 
     DECLARE @fragTxt varchar(20) = CAST(CAST(@frag AS decimal(6,2)) AS varchar(20)),
             @densTxt varchar(20) = CAST(CAST(@dens AS decimal(6,2)) AS varchar(20));
+
+    -- The shrink trick depends on where the background cleanup of the
+    -- previous build has left free space, which it occasionally hasn't
+    -- finished doing (seen once in CI on 2025: 0.42% fragmentation, i.e.
+    -- the shrink moved nothing). Build it again rather than fail.
+    IF @ok = 0 AND @Shape = 'scattered' AND @Attempt < 3
+    BEGIN
+        RAISERROR('  %s came out %s%% fragmented, not scattered; building it again (attempt %d).', 0, 1,
+                  @Table, @fragTxt, @Attempt) WITH NOWAIT;
+        DECLARE @next int = @Attempt + 1;
+        EXEC Demo.usp_BuildTable @Shape, @Table, @FileGroup, @next;
+        RETURN;
+    END
 
     IF @ok = 0
         RAISERROR('usp_BuildTable: %s did not come out %s (rows %I64d, fragmentation %s%%, density %s%%).',

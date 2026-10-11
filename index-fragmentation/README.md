@@ -122,6 +122,11 @@ the end of the file, last page first, so the table's page order comes out
 reversed. Pages move whole, so no row changes page and density is untouched.
 **Shrinking a data file does this to every index in it.**
 
+The trick depends on where free space sits in the file, and a dropped table
+over 128 extents is freed by a background task, not at once. The build waits
+for that cleanup. If a table still comes out unscattered (seen once in CI, on
+2025), it says so and builds again, up to three attempts.
+
 ### B — half-empty pages, and nothing else
 
 | | fragmentation | density | logical reads | buffer pool |
