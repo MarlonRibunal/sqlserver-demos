@@ -62,6 +62,9 @@ fixes.
 **"The rollback is taking forever" / "recovery after a restart takes hours"**
 - instant rollback, a log that truncates under long transactions, and the version store it costs → [Accelerated Database Recovery](accelerated-database-recovery/)
 
+**"Someone deleted the wrong rows" / "will our backups actually restore?"**
+- point-in-time restore to a copy, the tail-log backup, `COPY_ONLY` and broken differentials, checksums → [backup and restore](backup-restore/)
+
 **"The transaction log is full" / "the log file won't stop growing"**
 - no log backups, an open transaction, a shrink that won't shrink, thousands of VLFs → [why is my transaction log full?](transaction-log-full/)
 
@@ -102,6 +105,7 @@ fixes.
 | [Pagination: OFFSET vs keyset](pagination/) | none — creates its own | 2017 |
 | [Data compression: ROW, PAGE, columnstore, and COMPRESS()](data-compression/) | none — creates its own | 2016 SP1 |
 | [Accelerated Database Recovery: instant rollback, and what it costs](accelerated-database-recovery/) | none — creates its own | 2019 |
+| [Backup and restore: the restores you'll need, practised](backup-restore/) | none — creates its own | 2019 |
 
 ## Running them
 
