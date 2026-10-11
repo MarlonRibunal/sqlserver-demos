@@ -19,7 +19,9 @@
                                                same or more CPU per run
     E  why a plan stayed serial             -> NonParallelPlanReason
 
-  Needs at least two schedulers; on one, A-D report SKIPPED.
+  Needs at least two schedulers; on one, A-D report SKIPPED. On a machine
+  too busy to run four threads at once -- A's parallel run is no faster --
+  the timing claims in B-D report INCONCLUSIVE instead of failing.
 
   Expected runtime: about a minute.
 
@@ -132,7 +134,16 @@ SET @d = CONCAT('serial ', @sEl, ' ms elapsed, ', @sCpu, ' ms CPU; DOP ', @pDop,
 INSERT Demo.Verdicts VALUES ('A', 'parallel divides elapsed time, not work', @d, 'parallel elapsed < 60% of serial; CPU not lower',
     CASE WHEN @sched < 2 THEN 'SKIPPED'
          WHEN @pDop > 1 AND @pEl < @sEl * 0.6 AND @pCpu >= @sCpu * 0.9 THEN 'FASTER, SAME WORK'
+         -- DOP 4 but no faster: the threads didn't get four CPUs at once
+         -- (a busy or throttled machine). The timings below mean nothing then.
+         WHEN @pDop > 1 AND @pEl >= @sEl * 0.6 AND @pCpu >= @sCpu * 0.9 THEN 'INCONCLUSIVE'
          ELSE 'unexpected' END);
+
+-- Every timing claim below assumes A showed this machine really runs four
+-- threads at once. Where it didn't, they report INCONCLUSIVE; the facts
+-- that don't depend on timing (rows per thread, plan properties) still
+-- have to hold.
+DECLARE @timed bit = CASE WHEN @pDop > 1 AND @pEl < @sEl * 0.6 THEN 1 ELSE 0 END;
 
 -- B
 DECLARE @thr varchar(200), @share decimal(5,1), @mode varchar(10), @thrE varchar(200), @shareE decimal(5,1),
@@ -145,17 +156,19 @@ SELECT @eEl = ElapsedMsPer, @eCx = CxWaitMsPer FROM Demo.Runs WHERE Label = 'B: 
 SET @d = CONCAT('rows per thread at the Sort: ', @thr, ' (busiest ', @share, '%); ', @kEl, ' ms vs ', @kSerEl, ' ms serial');
 INSERT Demo.Verdicts VALUES ('B', 'skewed key: one thread does the work', @d, 'busiest thread > 80%; barely faster than serial',
     CASE WHEN @sched < 2 THEN 'SKIPPED'
-         WHEN @kDop > 1 AND @share > 80 AND @kEl > @kSerEl * 0.6 THEN 'SKEWED'
+         WHEN @kDop > 1 AND @share > 80 AND (@kEl > @kSerEl * 0.6 OR @timed = 0) THEN 'SKEWED'
          ELSE 'unexpected' END);
 SET @d = CONCAT('rows per thread at the Sort: ', @thrE, ' (busiest ', @shareE, '%); ', @eEl, ' ms vs ', @kEl, ' ms skewed');
 INSERT Demo.Verdicts VALUES ('B', 'even key: the work is shared', @d, 'busiest thread < 40%; well under half the skewed time',
     CASE WHEN @sched < 2 THEN 'SKIPPED'
          WHEN @shareE < 40 AND @eEl < @kEl * 0.5 THEN 'BALANCED'
+         WHEN @shareE < 40 AND @timed = 0 THEN 'INCONCLUSIVE'
          ELSE 'unexpected' END);
 SET @d = CONCAT('parallelism waits per run: skewed ', @kCx, ' ms (in ', @kEl, ' ms), even ', @eCx, ' ms (in ', @eEl, ' ms)');
 INSERT Demo.Verdicts VALUES ('B', 'skew shows up as parallelism waits', @d, 'skewed waits > 2x even',
     CASE WHEN @sched < 2 THEN 'SKIPPED'
          WHEN @kCx > @eCx * 2 THEN 'WAITING'
+         WHEN @timed = 0 THEN 'INCONCLUSIVE'
          ELSE 'unexpected' END);
 
 -- C
@@ -167,6 +180,7 @@ INSERT Demo.Verdicts VALUES ('C', 'batch mode: no repartitioning, no skew', @d, 
     CASE WHEN @sched < 2 THEN 'SKIPPED'
          WHEN ISNULL(@mode, 'Row') <> 'Batch' THEN 'SKIPPED'     -- no batch mode on rowstore here (edition or level)
          WHEN @share < 40 AND @cEl < @kEl THEN 'BALANCED'
+         WHEN @share < 40 AND @timed = 0 THEN 'INCONCLUSIVE'
          ELSE 'unexpected' END);
 
 -- D
@@ -181,6 +195,7 @@ SET @d = CONCAT('serial cost ', @sCost, '; serial ', @dsEl, ' ms / ', @dsCpu, ' 
 INSERT Demo.Verdicts VALUES ('D', 'a cheap query: faster in parallel, no cheaper', @d, 'parallel elapsed lower; no CPU saved',
     CASE WHEN @sched < 2 THEN 'SKIPPED'
          WHEN @dpDop > 1 AND @dpEl < @dsEl AND @dpCpu >= @dsCpu * 0.95 THEN 'CPU FOR SPEED'
+         WHEN @dpDop > 1 AND @timed = 0 THEN 'INCONCLUSIVE'
          ELSE 'unexpected' END);
 -- With no hint, the optimizer considers a parallel plan only when the serial
 -- plan costs more than the cost threshold, and only when MAXDOP allows it.

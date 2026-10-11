@@ -21,6 +21,10 @@ threads are working or one is doing the job while the others wait.**
   and tested on **2022 CU25 (16.0.4255.1)**, 8 schedulers, Linux container,
   compatibility level 160.
 - At least two schedulers. On one, scenarios A–D report `SKIPPED`.
+- CPUs that are really free. Timings need four threads to run at once. If
+  scenario A's parallel run is no faster than serial (seen once on a busy
+  CI runner: 297 ms against 318), the timing claims report `INCONCLUSIVE`.
+  The rows-per-thread and plan checks still apply.
 - No sample database. `01-setup.sql` creates its own database,
   `ParallelDemo`.
 - Permission to `CREATE DATABASE`, and `VIEW SERVER STATE`.
