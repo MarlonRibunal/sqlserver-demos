@@ -39,6 +39,7 @@ fixes.
 
 **"Everything is blocked" / "we get deadlocks"**
 - find the session holding everyone up → [blocking chains](blocking-chains/)
+- `Msg 1205`, "chosen as the deadlock victim" → [deadlock patterns](deadlock-patterns/)
 - a big update locks the whole table → [lock escalation](lock-escalation/)
 - readers wait for writers, or `NOLOCK` everywhere → [RCSI and snapshot isolation](rcsi-snapshot-isolation/)
 
@@ -84,6 +85,7 @@ fixes.
 | ["Why is my transaction log full?"](transaction-log-full/) | none — creates its own | 2016 SP2 |
 | [Query Store: catching a plan regression, forcing the fix, and watching it break](query-store-regression/) | none — creates its own | 2016 (2022 for E) |
 | [Upsert race conditions: IF EXISTS, MERGE, and the locks that make them safe](upsert-race-conditions/) | none — creates its own | 2016 SP1 |
+| [Deadlock patterns: making them on cue, fixing them, and reading the graphs](deadlock-patterns/) | none — creates its own | 2017 |
 
 ## Running them
 
