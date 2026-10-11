@@ -49,6 +49,9 @@ fixes.
 **"Duplicate rows" / "primary key violations under load" / "the counter is wrong"**
 - two sessions insert the same new row, or overwrite each other's update → [upsert race conditions](upsert-race-conditions/)
 
+**"Page 500 of the results takes forever" / "users see the same row on two pages"**
+- `OFFSET ... FETCH` on deep pages, rows repeated or lost between pages, ties in the sort, the total count → [pagination: OFFSET vs keyset](pagination/)
+
 **"Should I rebuild / add this index?"**
 - the maintenance job says the index is fragmented → [index fragmentation](index-fragmentation/)
 - the missing-index DMVs suggest something → [missing-index suggestions](missing-index-suggestions/)
@@ -90,6 +93,7 @@ fixes.
 | [Upsert race conditions: IF EXISTS, MERGE, and the locks that make them safe](upsert-race-conditions/) | none — creates its own | 2016 SP1 |
 | [Deadlock patterns: making them on cue, fixing them, and reading the graphs](deadlock-patterns/) | none — creates its own | 2017 |
 | [Parallelism: what it buys, what it costs, and when it goes wrong](parallelism/) | none — creates its own | 2019 |
+| [Pagination: OFFSET vs keyset](pagination/) | none — creates its own | 2017 |
 
 ## Running them
 
