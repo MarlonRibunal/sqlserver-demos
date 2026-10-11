@@ -34,6 +34,9 @@ fixes.
 - skewed data, rare values, values that don't exist → [statistics sampling](statistics-sampling/)
 - a `#temp` table vs a table variable → [tempdb](tempdb/)
 
+**"The totals are off by a cent" / "the report is missing a day" / "the dates are swapped"**
+- integer division, float, decimal and money rounding, strings cut short, datetime ranges, date formats, trailing spaces, identity overflow → [data type traps](data-type-traps/)
+
 **"Queries wait for memory" (`RESOURCE_SEMAPHORE`)**
 - grants far bigger than the data → [memory grants sized by declared width](memory-grant-declared-width/)
 
@@ -106,6 +109,7 @@ fixes.
 | [Data compression: ROW, PAGE, columnstore, and COMPRESS()](data-compression/) | none — creates its own | 2016 SP1 |
 | [Accelerated Database Recovery: instant rollback, and what it costs](accelerated-database-recovery/) | none — creates its own | 2019 |
 | [Backup and restore: the restores you'll need, practised](backup-restore/) | none — creates its own | 2019 |
+| [Data type traps: wrong answers without an error](data-type-traps/) | none — creates its own | 2016 |
 
 ## Running them
 
