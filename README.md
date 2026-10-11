@@ -52,6 +52,9 @@ fixes.
 **"Page 500 of the results takes forever" / "users see the same row on two pages"**
 - `OFFSET ... FETCH` on deep pages, rows repeated or lost between pages, ties in the sort, the total count → [pagination: OFFSET vs keyset](pagination/)
 
+**"The database is too big" / "should we turn on compression?"**
+- ROW vs PAGE vs columnstore, the CPU it costs, data that won't compress, heaps, big documents → [data compression](data-compression/)
+
 **"Should I rebuild / add this index?"**
 - the maintenance job says the index is fragmented → [index fragmentation](index-fragmentation/)
 - the missing-index DMVs suggest something → [missing-index suggestions](missing-index-suggestions/)
@@ -94,6 +97,7 @@ fixes.
 | [Deadlock patterns: making them on cue, fixing them, and reading the graphs](deadlock-patterns/) | none — creates its own | 2017 |
 | [Parallelism: what it buys, what it costs, and when it goes wrong](parallelism/) | none — creates its own | 2019 |
 | [Pagination: OFFSET vs keyset](pagination/) | none — creates its own | 2017 |
+| [Data compression: ROW, PAGE, columnstore, and COMPRESS()](data-compression/) | none — creates its own | 2016 SP1 |
 
 ## Running them
 
