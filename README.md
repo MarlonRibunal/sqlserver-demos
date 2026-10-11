@@ -59,6 +59,9 @@ fixes.
 - the maintenance job says the index is fragmented → [index fragmentation](index-fragmentation/)
 - the missing-index DMVs suggest something → [missing-index suggestions](missing-index-suggestions/)
 
+**"The rollback is taking forever" / "recovery after a restart takes hours"**
+- instant rollback, a log that truncates under long transactions, and the version store it costs → [Accelerated Database Recovery](accelerated-database-recovery/)
+
 **"The transaction log is full" / "the log file won't stop growing"**
 - no log backups, an open transaction, a shrink that won't shrink, thousands of VLFs → [why is my transaction log full?](transaction-log-full/)
 
@@ -98,6 +101,7 @@ fixes.
 | [Parallelism: what it buys, what it costs, and when it goes wrong](parallelism/) | none — creates its own | 2019 |
 | [Pagination: OFFSET vs keyset](pagination/) | none — creates its own | 2017 |
 | [Data compression: ROW, PAGE, columnstore, and COMPRESS()](data-compression/) | none — creates its own | 2016 SP1 |
+| [Accelerated Database Recovery: instant rollback, and what it costs](accelerated-database-recovery/) | none — creates its own | 2019 |
 
 ## Running them
 
