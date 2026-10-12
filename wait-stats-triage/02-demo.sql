@@ -222,7 +222,7 @@ INSERT Demo.Verdicts (Scenario, Claim, Evidence, Verdict) VALUES
 ('C', 'the cold scan read Demo.Big from disk',
  CAST(@c1_r AS varchar(10)) + ' physical reads, ' + CAST(@c1_st AS varchar(10)) + ' ms of read stall; ' + CAST(@c1_n AS varchar(10)) + ' PAGEIOLATCH waits, '
      + CAST(@c1_ms AS varchar(10)) + ' ms; elapsed ' + CAST(@c1_el AS varchar(10)) + ' ms',
- CASE WHEN @c1_r >= 50 THEN 'CONFIRMED' ELSE 'unexpected' END),
+ CASE WHEN @c1_r >= 10 THEN 'CONFIRMED' ELSE 'unexpected' END),     -- read-ahead reads are large: 2019 needed only 30
 ('C', 'so did the cold lookups, one page at a time',
  CAST(@c2_r AS varchar(10)) + ' physical reads, ' + CAST(@c2_st AS varchar(10)) + ' ms of read stall; ' + CAST(@c2_n AS varchar(10)) + ' PAGEIOLATCH waits, '
      + CAST(@c2_ms AS varchar(10)) + ' ms; elapsed ' + CAST(@c2_el AS varchar(10)) + ' ms',

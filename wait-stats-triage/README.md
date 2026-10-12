@@ -131,7 +131,7 @@ from disk. Here the pages really were read from disk, 1,692 reads, but
 no session ever waited: 51 ms of read stall in all, and each read finished
 before the page was needed. The container's files were most likely served
 from the host's memory. (The scan's 196 reads covered about 13,000 pages:
-read-ahead reads many pages at a time.) Slower storage would be expected to
+read-ahead reads many pages at a time. On 2019, in CI, it took only 30.) Slower storage would be expected to
 show these reads as `PAGEIOLATCH` waits, but that wasn't measured here. On
 storage this fast, disk reads didn't appear in wait stats at all. Look at
 `sys.dm_io_virtual_file_stats` and logical reads, not only at waits.
