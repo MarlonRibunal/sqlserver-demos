@@ -33,6 +33,7 @@ fixes.
 - two related columns in one `WHERE` → [correlated predicates](correlated-predicates/)
 - skewed data, rare values, values that don't exist → [statistics sampling](statistics-sampling/)
 - a `#temp` table vs a table variable → [tempdb](tempdb/)
+- a multi-statement function estimated at 1 or 100 rows, a table variable estimated at 1 → [MSTVFs and table variables](mstvf-table-variables/)
 
 **"The totals are off by a cent" / "the report is missing a day" / "the dates are swapped"**
 - integer division, float, decimal and money rounding, strings cut short, datetime ranges, date formats, trailing spaces, identity overflow → [data type traps](data-type-traps/)
@@ -114,6 +115,7 @@ fixes.
 | [Backup and restore: the restores you'll need, practised](backup-restore/) | none — creates its own | 2019 |
 | [Data type traps: wrong answers without an error](data-type-traps/) | none — creates its own | 2016 |
 | [Row-level security: what the filter stops, and what it doesn't](row-level-security/) | none — creates its own | 2016 SP1 |
+| [MSTVFs and table variables: the fixed guesses, and what replaced them](mstvf-table-variables/) | none — creates its own | 2019 |
 
 ## Running them
 
