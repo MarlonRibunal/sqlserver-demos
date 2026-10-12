@@ -38,6 +38,9 @@ fixes.
 **"The totals are off by a cent" / "the report is missing a day" / "the dates are swapped"**
 - integer division, float, decimal and money rounding, strings cut short, datetime ranges, date formats, trailing spaces, identity overflow → [data type traps](data-type-traps/)
 
+**"The server is slow and I don't know where to start" / "what are we waiting on?"**
+- elapsed = CPU + waits, per-session and live waits, `WRITELOG`, `PAGEIOLATCH`, `LCK_M_*`, `SOS_SCHEDULER_YIELD`, and the instance-wide numbers' noise → [wait stats triage](wait-stats-triage/)
+
 **"Queries wait for memory" (`RESOURCE_SEMAPHORE`)**
 - grants far bigger than the data → [memory grants sized by declared width](memory-grant-declared-width/)
 
@@ -116,6 +119,7 @@ fixes.
 | [Data type traps: wrong answers without an error](data-type-traps/) | none — creates its own | 2016 |
 | [Row-level security: what the filter stops, and what it doesn't](row-level-security/) | none — creates its own | 2016 SP1 |
 | [MSTVFs and table variables: the fixed guesses, and what replaced them](mstvf-table-variables/) | none — creates its own | 2019 |
+| [Wait stats triage: where the time went](wait-stats-triage/) | none — creates its own | 2017 |
 
 ## Running them
 
