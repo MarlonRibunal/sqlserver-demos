@@ -65,6 +65,9 @@ fixes.
 **"The rollback is taking forever" / "recovery after a restart takes hours"**
 - instant rollback, a log that truncates under long transactions, and the version store it costs → [Accelerated Database Recovery](accelerated-database-recovery/)
 
+**"A tenant can see (or write) another tenant's rows" / "the admin report comes back empty"**
+- writes past the filter, a spoofable `SESSION_CONTEXT`, leaks through unique keys and identities, the predicate that scans → [row-level security](row-level-security/)
+
 **"Someone deleted the wrong rows" / "will our backups actually restore?"**
 - point-in-time restore to a copy, the tail-log backup, `COPY_ONLY` and broken differentials, checksums → [backup and restore](backup-restore/)
 
@@ -110,6 +113,7 @@ fixes.
 | [Accelerated Database Recovery: instant rollback, and what it costs](accelerated-database-recovery/) | none — creates its own | 2019 |
 | [Backup and restore: the restores you'll need, practised](backup-restore/) | none — creates its own | 2019 |
 | [Data type traps: wrong answers without an error](data-type-traps/) | none — creates its own | 2016 |
+| [Row-level security: what the filter stops, and what it doesn't](row-level-security/) | none — creates its own | 2016 SP1 |
 
 ## Running them
 
