@@ -18,6 +18,7 @@ fixes.
 - "slow in the app, fast in SSMS" → [SET options and the plan cache](slow-in-app-fast-in-ssms/)
 - a search screen with optional filters → [catch-all queries](catch-all-queries/)
 - it was fine yesterday and nothing was deployed → [Query Store: plan regressions](query-store-regression/)
+- on SQL Server 2022, the plan changes by itself: PSP variants, CE feedback hints, memory grant feedback → [SQL Server 2022 query processing](sql2022-iqp/)
 
 **"This query reads far more than it should"**
 - a function or expression on the column → [non-SARGable predicates](non-sargable-predicates/)
@@ -120,6 +121,7 @@ fixes.
 | [Row-level security: what the filter stops, and what it doesn't](row-level-security/) | none — creates its own | 2016 SP1 |
 | [MSTVFs and table variables: the fixed guesses, and what replaced them](mstvf-table-variables/) | none — creates its own | 2019 |
 | [Wait stats triage: where the time went](wait-stats-triage/) | none — creates its own | 2017 |
+| [SQL Server 2022 query processing: plans that fix themselves, and how to tell](sql2022-iqp/) | none — creates its own | 2022 |
 
 ## Running them
 
