@@ -17,6 +17,7 @@ fixes.
 - only for the newest data → [the ascending-key problem](ascending-key/)
 - "slow in the app, fast in SSMS" → [SET options and the plan cache](slow-in-app-fast-in-ssms/)
 - a search screen with optional filters → [catch-all queries](catch-all-queries/)
+- the same, on SQL Server 2025: what optional parameter plan optimization fixes, and where it stops → [optional parameter plans](optional-parameter-plans/)
 - it was fine yesterday and nothing was deployed → [Query Store: plan regressions](query-store-regression/)
 - on SQL Server 2022, the plan changes by itself: PSP variants, CE feedback hints, memory grant feedback → [SQL Server 2022 query processing](sql2022-iqp/)
 
@@ -124,6 +125,7 @@ fixes.
 | [Wait stats triage: where the time went](wait-stats-triage/) | none — creates its own | 2017 |
 | [SQL Server 2022 query processing: plans that fix themselves, and how to tell](sql2022-iqp/) | none — creates its own | 2022 |
 | [Optimized locking: fewer locks, less blocking, and what still waits](optimized-locking/) | none — creates its own | 2025 |
+| [Optional parameter plans: SQL Server 2025's answer to the catch-all query](optional-parameter-plans/) | none — creates its own | 2025 |
 
 ## Running them
 
