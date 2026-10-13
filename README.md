@@ -52,6 +52,7 @@ fixes.
 - find the session holding everyone up → [blocking chains](blocking-chains/)
 - `Msg 1205`, "chosen as the deadlock victim" → [deadlock patterns](deadlock-patterns/)
 - a big update locks the whole table → [lock escalation](lock-escalation/)
+- on SQL Server 2025: fewer locks, no escalation, updates that stop waiting on rows they only read → [optimized locking](optimized-locking/)
 - readers wait for writers, or `NOLOCK` everywhere → [RCSI and snapshot isolation](rcsi-snapshot-isolation/)
 
 **"Duplicate rows" / "primary key violations under load" / "the counter is wrong"**
@@ -122,6 +123,7 @@ fixes.
 | [MSTVFs and table variables: the fixed guesses, and what replaced them](mstvf-table-variables/) | none — creates its own | 2019 |
 | [Wait stats triage: where the time went](wait-stats-triage/) | none — creates its own | 2017 |
 | [SQL Server 2022 query processing: plans that fix themselves, and how to tell](sql2022-iqp/) | none — creates its own | 2022 |
+| [Optimized locking: fewer locks, less blocking, and what still waits](optimized-locking/) | none — creates its own | 2025 |
 
 ## Running them
 
