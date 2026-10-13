@@ -170,12 +170,20 @@ DECLARE @plans int =
      CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) AS st
      WHERE  st.text LIKE N'%SELECT Rows = COUNT_BIG(*), Total = SUM(Amount) FROM Demo.Orders WHERE 1 = 1%'
        AND  st.text NOT LIKE N'%sys.dm_exec_query_stats%');
-DECLARE @best bit =
-    CASE WHEN NOT EXISTS (SELECT 1 FROM Demo.Calls AS d JOIN Demo.Calls AS o ON o.Search = d.Search
-                          WHERE d.Variant = 'Dynamic' AND o.Variant <> 'Dynamic' AND o.LogicalReads < d.LogicalReads * 0.95)
-         THEN 1 ELSE 0 END;
+-- "Fewest reads" allows 5% or 10 reads, whichever is more. The small
+-- searches read about 95 pages, and the same plan's count moved by 3 between
+-- runs. At level 170 (2025) the catch-all gets the dynamic version's plan
+-- (OPPO), so on those searches either could come out a few reads ahead.
+DECLARE @beaten nvarchar(200) =
+    (SELECT TOP (1) o.Variant + N' on the ' + o.Search + N' search: ' + CAST(o.LogicalReads AS nvarchar(20))
+                    + N' reads vs ' + CAST(d.LogicalReads AS nvarchar(20))
+     FROM   Demo.Calls AS d JOIN Demo.Calls AS o ON o.Search = d.Search
+     WHERE  d.Variant = 'Dynamic' AND o.Variant <> 'Dynamic'
+       AND  o.LogicalReads < d.LogicalReads - CASE WHEN d.LogicalReads * 0.05 > 10 THEN d.LogicalReads * 0.05 ELSE 10 END
+     ORDER BY d.LogicalReads - o.LogicalReads DESC);
+DECLARE @best bit = CASE WHEN @beaten IS NULL THEN 1 ELSE 0 END;
 DECLARE @d nvarchar(300) = CAST(@plans AS nvarchar(10)) + N' cached plans for the dynamic statement, one per combination; '
-    + CASE @best WHEN 1 THEN N'fewest reads on every search' ELSE N'NOT the fewest reads everywhere' END;
+    + CASE @best WHEN 1 THEN N'fewest reads on every search (within 5% or 10 reads)' ELSE N'NOT the fewest reads everywhere: ' + @beaten END;
 INSERT Demo.Verdicts VALUES ('D. Dynamic SQL', 'a plan per combination', @d, 'four plans; best or equal reads',
     CASE WHEN @plans = 4 AND @best = 1 THEN 'PLAN PER SHAPE' ELSE 'unexpected' END);
 GO
