@@ -140,7 +140,7 @@ per combination, and the fewest reads on every search. "Fewest" allows 5%
 or 10 reads, whichever is more: the small searches read about 95 pages, and
 the same plan's count moved by 3 between runs. On 2025 (compatibility level
 170) the catch-all gets the same plan on those searches, and CI once
-failed when it came out 3 or so reads ahead.
+failed this check before the 10-read allowance was added.
 
 Concatenating the *values* into the string instead would cache a plan per
 value and open the door to SQL injection. Concatenate predicates, pass
