@@ -31,6 +31,8 @@ Nothing outside the database they create. Inside `IqpDemo`:
   is 170) compiles like 2022. Scenario A moves it to 150 and back.
 - **Query Store** on, `READ_WRITE`, capture mode `ALL`. The demo clears it
   at the start and the end.
+- the demo **restarts `IqpDemo`** (`OFFLINE`, then `ONLINE`) at the start.
+  Anyone else connected to it is disconnected.
 - the demo empties **`IqpDemo`'s plan cache** with `ALTER DATABASE SCOPED
   CONFIGURATION CLEAR PROCEDURE_CACHE`, which affects that database's
   plans only. It never runs `DBCC FREEPROCCACHE`.
@@ -43,7 +45,7 @@ remain.
 
 ```
 01-setup.sql     ~20 s     creates IqpDemo: 1,000,000 orders, the queries, the harness
-02-demo.sql      ~5 s      three scenarios; prints a summary
+02-demo.sql      ~10 s     three scenarios; prints a summary
 03-cleanup.sql   seconds   drops IqpDemo
 ```
 
@@ -123,8 +125,8 @@ recommendation:
 | | persistence ON | persistence OFF |
 |---|---|---|
 | execution 1 | **110,152 KB** granted | 110,152 KB |
-| execution 2 | **3,016 KB** | 2,824 KB |
-| execution 5 | 3,016 KB | 2,824 KB |
+| execution 2 | **3,016 KB** | 3,016 KB |
+| execution 5 | 3,016 KB | 3,016 KB |
 | first execution after the plan cache is cleared | **3,016 KB** | **110,152 KB** again |
 
 Memory grant feedback (row mode, from 2019) corrects a grant after it's
@@ -153,6 +155,16 @@ established, so it's left out rather than shown unreliably.
 - **Query Store outlives a demo run.** Hints, feedback and variants from the
   first run would steer the second. The demo clears Query Store first and
   checks that nothing is left.
+- **The feedback is saved in the background, and only once.** On 2025 in
+  CI, the second demo run's correction was lost when the cache was cleared.
+  Locally, a second run's feedback never reached Query Store at all:
+  `QUERY_STORE CLEAR` emptied Query Store, but the engine still remembered
+  in memory that it had saved that feedback. The demo now restarts
+  `IqpDemo` (`OFFLINE`, `ONLINE`) at the start, and waits until the
+  feedback row is in Query Store before clearing the cache.
+- **Looking for a feedback row that isn't there was slow**: about 20 s per
+  query of `sys.query_store_plan_feedback` on the tested build, so the wait
+  is bounded by the clock.
 - **A sort that keeps only a few rows never spills.** `TOP` with `ORDER BY`
   uses a top-N sort, which holds just those rows. The first version of C
   waited for a spill that couldn't happen. Shrinking an oversized grant is

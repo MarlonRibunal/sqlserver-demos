@@ -335,6 +335,30 @@ BEGIN
         SET @i += 1;
     END
 
+    -- Query Store saves the feedback in the background. Wait (up to 10 s)
+    -- until it's there before the plan goes: on 2025, clearing the cache at
+    -- once lost it in one run of two.
+    -- Only with persistence ON: OFF, nothing is saved, and each look at
+    -- the view took about 20 s when the row wasn't there. Bounded by the
+    -- clock, not by a count of looks.
+    DECLARE @saved int = 0, @w int = 0, @t0 datetime2(3) = SYSDATETIME();
+    WHILE @onoff = 'ON' AND @saved = 0 AND DATEDIFF(millisecond, @t0, SYSDATETIME()) < 10000
+    BEGIN
+        EXEC sys.sp_executesql N'
+            SELECT @n = COUNT(*)
+            FROM   sys.query_store_plan_feedback AS f
+            JOIN   sys.query_store_plan AS p ON p.plan_id = f.plan_id
+            JOIN   sys.query_store_query AS q ON q.query_id = p.query_id
+            WHERE  q.object_id = OBJECT_ID(N''Demo.q_Grant'') AND f.feature_desc = N''Memory Grant Feedback'';',
+            N'@n int OUTPUT', @n = @saved OUTPUT;
+        IF @saved = 0 WAITFOR DELAY '00:00:00.100';
+        SET @w += 1;
+    END
+    IF @onoff = 'ON'
+        INSERT Demo.Results (Scenario, Label, Note)
+        VALUES ('C', 'persistence ON: feedback saved in Query Store',
+                CASE WHEN @saved > 0 THEN 'yes, within ' + CAST(DATEDIFF(millisecond, @t0, SYSDATETIME()) AS varchar(10)) + ' ms' ELSE 'not within 10 s' END);
+
     EXEC Demo.usp_ClearCache;
     EXEC Demo.usp_Exec 'q_Grant', 600042, @GrantKB = @grant OUTPUT;
     SET @label = 'persistence ' + @onoff + ': first execution after the plan cache is cleared';

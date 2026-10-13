@@ -14,8 +14,9 @@
 
   On SQL Server 2019 and earlier every scenario reports SKIPPED.
 
-  WHAT THIS CHANGES: only IqpDemo. It clears IqpDemo's Query Store and its
-  plan cache (ALTER DATABASE SCOPED CONFIGURATION CLEAR PROCEDURE_CACHE:
+  WHAT THIS CHANGES: only IqpDemo. It restarts IqpDemo (OFFLINE, then
+  ONLINE: anyone else connected to it is disconnected), clears its Query
+  Store and its plan cache (ALTER DATABASE SCOPED CONFIGURATION CLEAR PROCEDURE_CACHE:
   this database's plans only), moves its compatibility level between 150
   and 160, and turns MEMORY_GRANT_FEEDBACK_PERSISTENCE off and back on.
 
@@ -45,7 +46,19 @@ GO
 ------------------------------------------------------------------------------*/
 
 -- Start clean: compatibility level 160, the default settings, an empty
--- Query Store and plan cache.
+-- Query Store and plan cache. And a restart of IqpDemo (OFFLINE, ONLINE):
+-- clearing Query Store didn't clear what the engine remembered in memory,
+-- and a second run's memory grant feedback was then never saved again.
+USE master;
+GO
+IF CAST(SERVERPROPERTY('ProductMajorVersion') AS int) >= 16
+BEGIN
+    ALTER DATABASE IqpDemo SET OFFLINE WITH ROLLBACK IMMEDIATE;
+    ALTER DATABASE IqpDemo SET ONLINE;
+END
+GO
+USE IqpDemo;
+GO
 IF CAST(SERVERPROPERTY('ProductMajorVersion') AS int) >= 16
 BEGIN
     EXEC (N'ALTER DATABASE CURRENT SET COMPATIBILITY_LEVEL = 160;');
@@ -118,7 +131,7 @@ IF CAST(SERVERPROPERTY('ProductMajorVersion') AS int) >= 16
 BEGIN
     DECLARE @a150s bigint, @a150b bigint, @a160s bigint, @a160b bigint, @variants varchar(300),
             @bfirst bigint, @bafter bigint, @bhint varchar(300), @bfb varchar(300),
-            @on1g bigint, @on2g bigint, @on5g bigint, @onCg bigint, @off1g bigint, @off5g bigint, @offCg bigint;
+            @on1g bigint, @on2g bigint, @on5g bigint, @onCg bigint, @off1g bigint, @off5g bigint, @offCg bigint, @onSaved varchar(100);
 
     SELECT @a150s = Reads FROM Demo.Results WHERE Label LIKE 'compat 150: customer 600042%';
     SELECT @a150b = Reads FROM Demo.Results WHERE Label LIKE 'compat 150: customer 1 %';
@@ -135,6 +148,7 @@ BEGIN
     SELECT @on2g  = GrantKB FROM Demo.Results WHERE Label = 'persistence ON: execution 2';
     SELECT @on5g  = GrantKB FROM Demo.Results WHERE Label = 'persistence ON: execution 5';
     SELECT @onCg  = GrantKB FROM Demo.Results WHERE Label LIKE 'persistence ON: first execution after%';
+    SELECT @onSaved = Note FROM Demo.Results WHERE Label = 'persistence ON: feedback saved in Query Store';
     SELECT @off1g = GrantKB FROM Demo.Results WHERE Label = 'persistence OFF: execution 1';
     SELECT @off5g = GrantKB FROM Demo.Results WHERE Label = 'persistence OFF: execution 5';
     SELECT @offCg = GrantKB FROM Demo.Results WHERE Label LIKE 'persistence OFF: first execution after%';
@@ -167,8 +181,9 @@ BEGIN
      'execution 2: ' + CAST(@on2g AS varchar(20)) + ' KB; execution 5: ' + CAST(@on5g AS varchar(20)) + ' KB',
      CASE WHEN @on2g * 4 <= @on1g AND @on5g * 4 <= @on1g THEN 'CONFIRMED' ELSE 'unexpected' END),
     ('C', 'with persistence ON, the smaller grant survives the plan cache being cleared',
-     'first execution after: ' + CAST(@onCg AS varchar(20)) + ' KB',
-     CASE WHEN @onCg * 4 <= @on1g THEN 'CONFIRMED' ELSE 'unexpected' END),
+     'feedback saved: ' + ISNULL(@onSaved, '?') + '; first execution after: ' + CAST(@onCg AS varchar(20)) + ' KB',
+     CASE WHEN @onCg * 4 <= @on1g THEN 'CONFIRMED'
+          WHEN @onSaved NOT LIKE 'yes%' THEN 'INCONCLUSIVE' ELSE 'unexpected' END),
     ('C', 'with persistence OFF, it starts again from the oversized grant',
      'first execution after: ' + CAST(@offCg AS varchar(20)) + ' KB (it had come down to ' + CAST(@off5g AS varchar(20)) + ')',
      CASE WHEN @offCg >= 4 * @off5g AND @off5g * 4 <= @off1g THEN 'CONFIRMED' ELSE 'unexpected' END);
