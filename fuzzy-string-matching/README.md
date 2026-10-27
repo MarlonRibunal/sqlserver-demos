@@ -14,13 +14,14 @@ similarity scores disagree, and what a search over 200,000 names costs.
 **Fuzzy matching is a scan: every row's distance is computed. Narrow the
 rows first with something indexed, and accept that the narrowing has its
 own blind spots. Pick one similarity score and tune its threshold on your
-own data; the two scores don't agree. And on the tested build, the
-functions need preview features and a Windows collation.**
+own data; the two scores don't agree. The functions need a Windows
+collation, and before CU10 they also needed preview features.**
 
 ## Prerequisites
 
 - **SQL Server 2025 or later.** Developed and tested on **2025 RTM-CU9-GDR
-  (17.0.5015.4)**, Linux container. On 2022 and earlier the scripts still
+  (17.0.5015.4)**, Linux container, and re-run on **RTM-CU10 (17.0.5035.5)**,
+  where scenario A differs (below). On 2022 and earlier the scripts still
   run, and the demo reports every scenario as `SKIPPED`.
 - No sample database. `01-setup.sql` creates its own database, `FuzzyDemo`.
 - Permission to `CREATE DATABASE`.
@@ -66,12 +67,14 @@ The numbers below come from the tested run: SQL Server 2025 RTM-CU9-GDR.
 
 | | result |
 |---|---|
-| `EDIT_DISTANCE`, `PREVIEW_FEATURES = OFF` | **error 195**: "not a recognized built-in function name" |
+| `EDIT_DISTANCE`, `PREVIEW_FEATURES = OFF`, RTM-CU9-GDR | **error 195**: "not a recognized built-in function name" |
+| the same on RTM-CU10 (17.0.5035.5) | ran |
 | `PREVIEW_FEATURES = ON`, Windows collation | ran |
 | a string in `SQL_Latin1_General_CP1_CI_AS` | **error 9847**: "does not support SQL_* collations" |
 
-On the tested build the functions are a **preview feature**, switched on per
-database. And they refuse `SQL_*` collations.
+Up to RTM-CU9-GDR the functions were a **preview feature**, switched on per
+database; from CU10 they run without it. The demo expects whichever applies
+to the build it runs on. On both builds they refuse `SQL_*` collations.
 `SQL_Latin1_General_CP1_CI_AS` is the default server collation on a
 US-English install, so on many servers the functions fail on existing
 columns until they're cast to a Windows collation (`COLLATE
@@ -157,8 +160,8 @@ need a smaller one.
 
 ## Takeaways
 
-1. **On the tested build the functions need `PREVIEW_FEATURES = ON`** and a
-   **Windows collation**: error 195 and error 9847 otherwise.
+1. **The functions need a Windows collation** (error 9847 otherwise) and,
+   before CU10, **`PREVIEW_FEATURES = ON`** (error 195 otherwise).
 2. **`EDIT_DISTANCE` follows the collation** (case ignored here) and counts
    a swap of adjacent letters as one edit.
 3. **With a maximum, it returns the maximum plus 1** once it's passed.

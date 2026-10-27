@@ -14,8 +14,9 @@
          whatever the server's default is. The fuzzy functions refuse
          SQL_* collations, and SQL_Latin1_General_CP1_CI_AS is the default
          on a US-English install.
-       - it turns on the database scoped configuration PREVIEW_FEATURES. On
-         the tested build the fuzzy functions don't exist without it.
+       - it turns on the database scoped configuration PREVIEW_FEATURES. Up
+         to RTM-CU9-GDR the fuzzy functions don't exist without it; from
+         CU10 (17.0.5035.5) it's no longer needed, and does no harm.
 
   ON SQL SERVER 2022 AND EARLIER the database is created, and the demo
   reports every scenario as SKIPPED: the functions arrived in 2025.

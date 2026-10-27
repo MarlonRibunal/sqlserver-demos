@@ -71,10 +71,15 @@ BEGIN
             @on  varchar(40) = (SELECT Value FROM Demo.Results WHERE Item = 'EDIT_DISTANCE, PREVIEW_FEATURES = ON, Windows collation'),
             @sql varchar(40) = (SELECT Value FROM Demo.Results WHERE Item = 'EDIT_DISTANCE, a SQL_Latin1_General_CP1_CI_AS string');
 
+    -- Build-dependent: on RTM-CU9-GDR (17.0.5015.4) the functions needed
+    -- PREVIEW_FEATURES; on RTM-CU10 (17.0.5035.5) they ran without it.
+    DECLARE @build int = CAST(SERVERPROPERTY('ProductBuild') AS int);
+    DECLARE @expectOff varchar(40) = CASE WHEN @build >= 5035 THEN 'ran' ELSE 'error 195' END;
+
     INSERT Demo.Verdicts (Scenario, Claim, Evidence, Verdict) VALUES
-    ('A', 'on this build the functions need PREVIEW_FEATURES = ON (error 195 without)',
-     'off: ' + @off + ', on: ' + @on,
-     CASE WHEN @off = 'error 195' AND @on = 'ran' THEN 'CONFIRMED' ELSE 'unexpected' END),
+    ('A', 'PREVIEW_FEATURES: needed before CU10 (error 195 without), not from CU10 (17.0.5035)',
+     'build ' + CAST(@build AS varchar(10)) + ', off: ' + @off + ', on: ' + @on,
+     CASE WHEN @off = @expectOff AND @on = 'ran' THEN 'CONFIRMED' ELSE 'unexpected' END),
     ('A', 'they refuse SQL_* collations (error 9847), the default on a US-English install',
      @sql, CASE WHEN @sql = 'error 9847' THEN 'CONFIRMED' ELSE 'unexpected' END);
 END
