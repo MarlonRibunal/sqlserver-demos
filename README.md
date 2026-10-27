@@ -39,6 +39,7 @@ fixes.
 - a date-partitioned table and the query reads every partition → [partition elimination](partition-elimination/)
 - a heap that keeps getting slower to scan → [forwarded records](heap-forwarded-records/)
 - a columnstore table that isn't as fast or small as it should be → [the delta store](columnstore-delta-store/)
+- a columnstore range query that reads every rowgroup: `ORDER`, MAXDOP, and loads after the build (SQL Server 2022, 2025) → [ordered columnstore](ordered-columnstore/)
 - filtering on a property inside JSON, or a JSON index that isn't used (SQL Server 2025) → [the json data type](json-native-type/)
 - `REGEXP_LIKE` that scans, misestimates, or quietly misses rows (SQL Server 2025) → [regular expressions](regex-functions/)
 - a nearest-neighbour search over embeddings that reads every row, or a vector index that misses rows (SQL Server 2025) → [vector search](vector-search/)
@@ -117,6 +118,7 @@ fixes.
 | [Key lookups and the tipping point](tipping-point/) | none — creates its own | 2016 | [Key lookups and the tipping point](https://marlonribunal.com/sqlserver-demos/tipping-point/) |
 | [Scalar UDF inlining: what SQL Server 2019 changed, and what it didn't](scalar-udf-inlining/) | none — creates its own | 2019 | [Scalar UDF inlining](https://marlonribunal.com/sqlserver-demos/scalar-udf-inlining/) |
 | [Columnstore: the delta store, and the rowgroups a query can skip](columnstore-delta-store/) | none — creates its own | 2016 SP1 | [Columnstore and the delta store](https://marlonribunal.com/sqlserver-demos/columnstore-delta-store/) |
+| [Ordered columnstore indexes: what ORDER buys a range query, and when it stops](ordered-columnstore/) | none — creates its own | 2022 | [Ordered columnstore indexes (SQL Server 2022 and 2025)](https://marlonribunal.com/sqlserver-demos/ordered-columnstore/) |
 | [Missing-index suggestions: what the DMVs ask for, and what to build instead](missing-index-suggestions/) | none — creates its own | 2016 | [Missing-index suggestions](https://marlonribunal.com/sqlserver-demos/missing-index-suggestions/) |
 | ["Slow in the app, fast in SSMS": SET options and the plan cache](slow-in-app-fast-in-ssms/) | none — creates its own | 2016 | [Slow in the app, fast in SSMS](https://marlonribunal.com/sqlserver-demos/slow-in-app-fast-in-ssms/) |
 | [Minimal logging: when bulk inserts really are cheap](minimal-logging/) | none — creates its own | 2016 | [Minimal logging](https://marlonribunal.com/sqlserver-demos/minimal-logging/) |
@@ -177,7 +179,8 @@ If you're here to see what a specific release changed:
 - **SQL Server 2022**: [parameter-sensitive plans, CE feedback, DOP
   feedback](sql2022-iqp/),
   [memory grant feedback that persists](memory-grant-declared-width/),
-  [Query Store hints](query-store-regression/)
+  [Query Store hints](query-store-regression/),
+  [ordered clustered columnstore indexes](ordered-columnstore/)
 - **SQL Server 2025**: [optimized locking](optimized-locking/),
   [optional parameter plan optimization](optional-parameter-plans/),
   [the json data type and JSON indexes](json-native-type/),
@@ -187,7 +190,8 @@ If you're here to see what a specific release changed:
   [ZSTD backup compression](zstd-backup-compression/),
   [the ABORT_QUERY_EXECUTION hint](abort-query-execution/),
   [new T-SQL syntax: `||`, `PRODUCT` and more](tsql-2025-syntax/),
-  [tempdb space governance](tempdb-space-governance/)
+  [tempdb space governance](tempdb-space-governance/),
+  [ordered nonclustered columnstore, and ordered online builds](ordered-columnstore/)
 
 ## Running them
 
