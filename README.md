@@ -40,6 +40,7 @@ fixes.
 - a columnstore table that isn't as fast or small as it should be → [the delta store](columnstore-delta-store/)
 - filtering on a property inside JSON, or a JSON index that isn't used (SQL Server 2025) → [the json data type](json-native-type/)
 - `REGEXP_LIKE` that scans, misestimates, or quietly misses rows (SQL Server 2025) → [regular expressions](regex-functions/)
+- a nearest-neighbour search over embeddings that reads every row, or a vector index that misses rows (SQL Server 2025) → [vector search](vector-search/)
 
 **"The estimates in the plan are nowhere near the actual rows"**
 - rows newer than the statistics → [ascending key](ascending-key/)
@@ -139,6 +140,7 @@ fixes.
 | [Optional parameter plans: SQL Server 2025's answer to the catch-all query](optional-parameter-plans/) | none — creates its own | 2025 | [Optional parameter plans (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optional-parameter-plans/) |
 | [The json data type and JSON indexes: what SQL Server 2025 changes, and what it doesn't](json-native-type/) | none — creates its own | 2025 | [The json data type (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/json-native-type/) |
 | [Regular expressions in SQL Server 2025: REGEXP_LIKE against LIKE](regex-functions/) | none — creates its own | 2025 | [Regular expressions (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/regex-functions/) |
+| [Vector search in SQL Server 2025: exact, approximate, and the catches](vector-search/) | none — creates its own | 2025 | [Vector search (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/vector-search/) |
 
 **Min. version** is the oldest version on which every scenario runs. Where
 only some scenarios need a newer version, the column says which. On an older
@@ -169,7 +171,8 @@ If you're here to see what a specific release changed:
 - **SQL Server 2025**: [optimized locking](optimized-locking/),
   [optional parameter plan optimization](optional-parameter-plans/),
   [the json data type and JSON indexes](json-native-type/),
-  [regular expressions](regex-functions/)
+  [regular expressions](regex-functions/),
+  [vector search](vector-search/)
 
 ## Running them
 
