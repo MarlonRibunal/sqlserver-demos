@@ -28,6 +28,7 @@ fixes.
 - a search screen with optional filters → [catch-all queries](catch-all-queries/)
 - the same, on SQL Server 2025: what optional parameter plan optimization fixes, and where it stops → [optional parameter plans](optional-parameter-plans/)
 - it was fine yesterday and nothing was deployed → [Query Store: plan regressions](query-store-regression/)
+- one query from an app you can't change takes the server down: stop it from running (SQL Server 2025) → [ABORT_QUERY_EXECUTION](abort-query-execution/)
 - on SQL Server 2022, the plan changes by itself: PSP variants, CE feedback hints, memory grant feedback → [SQL Server 2022 query processing](sql2022-iqp/)
 
 **"This query reads far more than it should"**
@@ -145,6 +146,7 @@ fixes.
 | [Vector search in SQL Server 2025: exact, approximate, and the catches](vector-search/) | none — creates its own | 2025 | [Vector search (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/vector-search/) |
 | [Fuzzy string matching in SQL Server 2025: EDIT_DISTANCE, Jaro-Winkler, and SOUNDEX](fuzzy-string-matching/) | none — creates its own | 2025 | [Fuzzy string matching (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/fuzzy-string-matching/) |
 | [ZSTD backup compression in SQL Server 2025: smaller, often faster, and one trap](zstd-backup-compression/) | none — creates its own | 2025 | [ZSTD backup compression (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/zstd-backup-compression/) |
+| [Blocking a query with ABORT_QUERY_EXECUTION: SQL Server 2025's kill switch](abort-query-execution/) | none — creates its own | 2025 | [Blocking a query with ABORT_QUERY_EXECUTION (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/abort-query-execution/) |
 
 **Min. version** is the oldest version on which every scenario runs. Where
 only some scenarios need a newer version, the column says which. On an older
@@ -178,7 +180,8 @@ If you're here to see what a specific release changed:
   [regular expressions](regex-functions/),
   [vector search](vector-search/),
   [fuzzy string matching](fuzzy-string-matching/),
-  [ZSTD backup compression](zstd-backup-compression/)
+  [ZSTD backup compression](zstd-backup-compression/),
+  [the ABORT_QUERY_EXECUTION hint](abort-query-execution/)
 
 ## Running them
 
