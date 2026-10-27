@@ -1,5 +1,7 @@
 # Memory grants sized by declared width
 
+> **The short version:** [Memory grants sized by declared width](https://marlonribunal.com/sqlserver-demos/memory-grant-declared-width/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 "Make it `varchar(4000)`, storage is the same anyway." For storage, that's
 true. This topic sorts the same 500,000 seventeen-character names stored
 under four declarations and measures the memory each sort is granted: 68 MB

@@ -1,5 +1,7 @@
 # Heaps: forwarded records, and the pages a heap keeps
 
+> **The short version:** [Heaps and forwarded records](https://marlonribunal.com/sqlserver-demos/heap-forwarded-records/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 "Heaps are fine for staging tables." Often they are. Four scenarios measure
 the two ways a heap quietly gets expensive: rows that grow get **forwarded**,
 and deleted rows leave **empty pages that never go away**. One of them is

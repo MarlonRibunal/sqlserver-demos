@@ -7,6 +7,10 @@ Self-contained, runnable demonstrations of SQL Server behaviour — one folder p
 topic. Each folder has its own README with prerequisites, run order, and what to
 expect in the output.
 
+Every topic also has a short explainer on my blog: what the problem looks like,
+why it happens, what fixes it, and a query to check your own server. Browse them
+all at **[SQL Server Demos on marlonribunal.com](https://marlonribunal.com/sqlserver-demos/)**.
+
 ## Start from the symptom
 
 You probably arrived with a problem, not a feature name. Find it below; each
@@ -88,45 +92,45 @@ fixes.
 
 ## Topics
 
-| Topic | Sample database | Min. version |
-|---|---|---|
-| [Parameter sniffing, `RECOMPILE`, memory grant feedback](parameter-sniffing/) | WideWorldImporters | 2017 (2022+ for all six scenarios) |
-| [tempdb: when to reach for a `#temp` table](tempdb/) | none — creates its own | 2016 |
-| [Index fragmentation: what it costs, and what it doesn't](index-fragmentation/) | none — creates its own | 2016 |
-| [The ascending-key problem: estimates for rows statistics haven't seen](ascending-key/) | none — creates its own | 2016 SP2 |
-| [Implicit conversions: when a type mismatch costs a scan](implicit-conversion/) | none — creates its own | 2016 |
-| [Non-SARGable predicates: which functions on a column cost a seek](non-sargable-predicates/) | none — creates its own | 2016 |
-| [Lock escalation: the threshold, and what does and doesn't avoid it](lock-escalation/) | none — creates its own | 2016 |
-| [Heaps: forwarded records, and the pages a heap keeps](heap-forwarded-records/) | none — creates its own | 2016 |
-| [Key lookups and the tipping point](tipping-point/) | none — creates its own | 2016 |
-| [Scalar UDF inlining: what SQL Server 2019 changed, and what it didn't](scalar-udf-inlining/) | none — creates its own | 2019 |
-| [Columnstore: the delta store, and the rowgroups a query can skip](columnstore-delta-store/) | none — creates its own | 2016 SP1 |
-| [Missing-index suggestions: what the DMVs ask for, and what to build instead](missing-index-suggestions/) | none — creates its own | 2016 |
-| ["Slow in the app, fast in SSMS": SET options and the plan cache](slow-in-app-fast-in-ssms/) | none — creates its own | 2016 |
-| [Minimal logging: when bulk inserts really are cheap](minimal-logging/) | none — creates its own | 2016 |
-| [Correlated predicates: when two columns aren't independent](correlated-predicates/) | none — creates its own | 2016 SP1 |
-| [Memory grants sized by declared width](memory-grant-declared-width/) | none — creates its own | 2016 (2019+ for C, 2022 for D) |
-| [Catch-all queries: optional parameters, five ways](catch-all-queries/) | none — creates its own | 2016 |
-| [Partition elimination traps](partition-elimination/) | none — creates its own | 2016 SP1 |
-| [Statistics sampling and skew](statistics-sampling/) | none — creates its own | 2016 SP1 CU4 |
-| [RCSI and snapshot isolation: readers, writers, and the version store](rcsi-snapshot-isolation/) | none — creates its own | 2016 |
-| [Blocking chains: finding the head](blocking-chains/) | none — creates its own | 2016 |
-| ["Why is my transaction log full?"](transaction-log-full/) | none — creates its own | 2016 SP2 |
-| [Query Store: catching a plan regression, forcing the fix, and watching it break](query-store-regression/) | none — creates its own | 2016 (2022 for E) |
-| [Upsert race conditions: IF EXISTS, MERGE, and the locks that make them safe](upsert-race-conditions/) | none — creates its own | 2016 SP1 |
-| [Deadlock patterns: making them on cue, fixing them, and reading the graphs](deadlock-patterns/) | none — creates its own | 2017 |
-| [Parallelism: what it buys, what it costs, and when it goes wrong](parallelism/) | none — creates its own | 2019 |
-| [Pagination: OFFSET vs keyset](pagination/) | none — creates its own | 2017 |
-| [Data compression: ROW, PAGE, columnstore, and COMPRESS()](data-compression/) | none — creates its own | 2016 SP1 |
-| [Accelerated Database Recovery: instant rollback, and what it costs](accelerated-database-recovery/) | none — creates its own | 2019 |
-| [Backup and restore: the restores you'll need, practised](backup-restore/) | none — creates its own | 2019 |
-| [Data type traps: wrong answers without an error](data-type-traps/) | none — creates its own | 2016 |
-| [Row-level security: what the filter stops, and what it doesn't](row-level-security/) | none — creates its own | 2016 SP1 |
-| [MSTVFs and table variables: the fixed guesses, and what replaced them](mstvf-table-variables/) | none — creates its own | 2019 |
-| [Wait stats triage: where the time went](wait-stats-triage/) | none — creates its own | 2017 |
-| [SQL Server 2022 query processing: plans that fix themselves, and how to tell](sql2022-iqp/) | none — creates its own | 2022 |
-| [Optimized locking: fewer locks, less blocking, and what still waits](optimized-locking/) | none — creates its own | 2025 |
-| [Optional parameter plans: SQL Server 2025's answer to the catch-all query](optional-parameter-plans/) | none — creates its own | 2025 |
+| Topic | Sample database | Min. version | Explainer |
+|---|---|---|---|
+| [Parameter sniffing, `RECOMPILE`, memory grant feedback](parameter-sniffing/) | WideWorldImporters | 2017 (2022+ for all six scenarios) | [Parameter sniffing](https://marlonribunal.com/sqlserver-demos/parameter-sniffing/) |
+| [tempdb: when to reach for a `#temp` table](tempdb/) | none — creates its own | 2016 | [tempdb and #temp tables](https://marlonribunal.com/sqlserver-demos/tempdb/) |
+| [Index fragmentation: what it costs, and what it doesn't](index-fragmentation/) | none — creates its own | 2016 | [Index fragmentation](https://marlonribunal.com/sqlserver-demos/index-fragmentation/) |
+| [The ascending-key problem: estimates for rows statistics haven't seen](ascending-key/) | none — creates its own | 2016 SP2 | [The ascending-key problem](https://marlonribunal.com/sqlserver-demos/ascending-key/) |
+| [Implicit conversions: when a type mismatch costs a scan](implicit-conversion/) | none — creates its own | 2016 | [Implicit conversions](https://marlonribunal.com/sqlserver-demos/implicit-conversion/) |
+| [Non-SARGable predicates: which functions on a column cost a seek](non-sargable-predicates/) | none — creates its own | 2016 | [Non-SARGable predicates](https://marlonribunal.com/sqlserver-demos/non-sargable-predicates/) |
+| [Lock escalation: the threshold, and what does and doesn't avoid it](lock-escalation/) | none — creates its own | 2016 | [Lock escalation](https://marlonribunal.com/sqlserver-demos/lock-escalation/) |
+| [Heaps: forwarded records, and the pages a heap keeps](heap-forwarded-records/) | none — creates its own | 2016 | [Heaps and forwarded records](https://marlonribunal.com/sqlserver-demos/heap-forwarded-records/) |
+| [Key lookups and the tipping point](tipping-point/) | none — creates its own | 2016 | [Key lookups and the tipping point](https://marlonribunal.com/sqlserver-demos/tipping-point/) |
+| [Scalar UDF inlining: what SQL Server 2019 changed, and what it didn't](scalar-udf-inlining/) | none — creates its own | 2019 | [Scalar UDF inlining](https://marlonribunal.com/sqlserver-demos/scalar-udf-inlining/) |
+| [Columnstore: the delta store, and the rowgroups a query can skip](columnstore-delta-store/) | none — creates its own | 2016 SP1 | [Columnstore and the delta store](https://marlonribunal.com/sqlserver-demos/columnstore-delta-store/) |
+| [Missing-index suggestions: what the DMVs ask for, and what to build instead](missing-index-suggestions/) | none — creates its own | 2016 | [Missing-index suggestions](https://marlonribunal.com/sqlserver-demos/missing-index-suggestions/) |
+| ["Slow in the app, fast in SSMS": SET options and the plan cache](slow-in-app-fast-in-ssms/) | none — creates its own | 2016 | [Slow in the app, fast in SSMS](https://marlonribunal.com/sqlserver-demos/slow-in-app-fast-in-ssms/) |
+| [Minimal logging: when bulk inserts really are cheap](minimal-logging/) | none — creates its own | 2016 | [Minimal logging](https://marlonribunal.com/sqlserver-demos/minimal-logging/) |
+| [Correlated predicates: when two columns aren't independent](correlated-predicates/) | none — creates its own | 2016 SP1 | [Correlated predicates](https://marlonribunal.com/sqlserver-demos/correlated-predicates/) |
+| [Memory grants sized by declared width](memory-grant-declared-width/) | none — creates its own | 2016 (2019+ for C, 2022 for D) | [Memory grants sized by declared width](https://marlonribunal.com/sqlserver-demos/memory-grant-declared-width/) |
+| [Catch-all queries: optional parameters, five ways](catch-all-queries/) | none — creates its own | 2016 | [Catch-all queries](https://marlonribunal.com/sqlserver-demos/catch-all-queries/) |
+| [Partition elimination traps](partition-elimination/) | none — creates its own | 2016 SP1 | [Partition elimination](https://marlonribunal.com/sqlserver-demos/partition-elimination/) |
+| [Statistics sampling and skew](statistics-sampling/) | none — creates its own | 2016 SP1 CU4 | [Statistics sampling and skew](https://marlonribunal.com/sqlserver-demos/statistics-sampling/) |
+| [RCSI and snapshot isolation: readers, writers, and the version store](rcsi-snapshot-isolation/) | none — creates its own | 2016 | [RCSI and snapshot isolation](https://marlonribunal.com/sqlserver-demos/rcsi-snapshot-isolation/) |
+| [Blocking chains: finding the head](blocking-chains/) | none — creates its own | 2016 | [Blocking chains](https://marlonribunal.com/sqlserver-demos/blocking-chains/) |
+| ["Why is my transaction log full?"](transaction-log-full/) | none — creates its own | 2016 SP2 | [Why is my transaction log full?](https://marlonribunal.com/sqlserver-demos/transaction-log-full/) |
+| [Query Store: catching a plan regression, forcing the fix, and watching it break](query-store-regression/) | none — creates its own | 2016 (2022 for E) | [Query Store plan regressions](https://marlonribunal.com/sqlserver-demos/query-store-regression/) |
+| [Upsert race conditions: IF EXISTS, MERGE, and the locks that make them safe](upsert-race-conditions/) | none — creates its own | 2016 SP1 | [Upsert race conditions](https://marlonribunal.com/sqlserver-demos/upsert-race-conditions/) |
+| [Deadlock patterns: making them on cue, fixing them, and reading the graphs](deadlock-patterns/) | none — creates its own | 2017 | [Deadlock patterns](https://marlonribunal.com/sqlserver-demos/deadlock-patterns/) |
+| [Parallelism: what it buys, what it costs, and when it goes wrong](parallelism/) | none — creates its own | 2019 | [Parallelism and CXPACKET](https://marlonribunal.com/sqlserver-demos/parallelism/) |
+| [Pagination: OFFSET vs keyset](pagination/) | none — creates its own | 2017 | [Pagination: OFFSET vs keyset](https://marlonribunal.com/sqlserver-demos/pagination/) |
+| [Data compression: ROW, PAGE, columnstore, and COMPRESS()](data-compression/) | none — creates its own | 2016 SP1 | [Data compression](https://marlonribunal.com/sqlserver-demos/data-compression/) |
+| [Accelerated Database Recovery: instant rollback, and what it costs](accelerated-database-recovery/) | none — creates its own | 2019 | [Accelerated Database Recovery](https://marlonribunal.com/sqlserver-demos/accelerated-database-recovery/) |
+| [Backup and restore: the restores you'll need, practised](backup-restore/) | none — creates its own | 2019 | [Backup and restore](https://marlonribunal.com/sqlserver-demos/backup-restore/) |
+| [Data type traps: wrong answers without an error](data-type-traps/) | none — creates its own | 2016 | [Data type traps](https://marlonribunal.com/sqlserver-demos/data-type-traps/) |
+| [Row-level security: what the filter stops, and what it doesn't](row-level-security/) | none — creates its own | 2016 SP1 | [Row-level security](https://marlonribunal.com/sqlserver-demos/row-level-security/) |
+| [MSTVFs and table variables: the fixed guesses, and what replaced them](mstvf-table-variables/) | none — creates its own | 2019 | [MSTVFs and table variables](https://marlonribunal.com/sqlserver-demos/mstvf-table-variables/) |
+| [Wait stats triage: where the time went](wait-stats-triage/) | none — creates its own | 2017 | [Wait stats triage](https://marlonribunal.com/sqlserver-demos/wait-stats-triage/) |
+| [SQL Server 2022 query processing: plans that fix themselves, and how to tell](sql2022-iqp/) | none — creates its own | 2022 | [SQL Server 2022 query processing](https://marlonribunal.com/sqlserver-demos/sql2022-iqp/) |
+| [Optimized locking: fewer locks, less blocking, and what still waits](optimized-locking/) | none — creates its own | 2025 | [Optimized locking (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optimized-locking/) |
+| [Optional parameter plans: SQL Server 2025's answer to the catch-all query](optional-parameter-plans/) | none — creates its own | 2025 | [Optional parameter plans (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optional-parameter-plans/) |
 
 **Min. version** is the oldest version on which every scenario runs. Where
 only some scenarios need a newer version, the column says which. On an older

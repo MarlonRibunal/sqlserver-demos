@@ -1,5 +1,7 @@
 # "Why is my transaction log full?"
 
+> **The short version:** [Why is my transaction log full?](https://marlonribunal.com/sqlserver-demos/transaction-log-full/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 The most common production emergency there is: the log file has filled the
 disk, or won't stop growing. This topic reproduces the usual causes one at a
 time, measures each through the DMVs that diagnose it, and shows the reflex

@@ -1,5 +1,7 @@
 # Accelerated Database Recovery: instant rollback, and what it costs
 
+> **The short version:** [Accelerated Database Recovery](https://marlonribunal.com/sqlserver-demos/accelerated-database-recovery/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 A killed batch job that takes longer to roll back than it ran. A log that
 fills behind one long transaction. A restart that spends an hour in
 recovery. Accelerated Database Recovery (ADR, SQL Server 2019+) exists for

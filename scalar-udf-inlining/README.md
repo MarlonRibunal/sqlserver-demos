@@ -1,5 +1,7 @@
 # Scalar UDF inlining: what SQL Server 2019 changed, and what it didn't
 
+> **The short version:** [Scalar UDF inlining](https://marlonribunal.com/sqlserver-demos/scalar-udf-inlining/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 For twenty years the advice was "don't put scalar functions in queries": they
 run once per row and force the whole plan serial. SQL Server 2019 added
 **inlining**, which rewrites a function into the calling query as if its body

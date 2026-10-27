@@ -1,5 +1,7 @@
 # Correlated predicates: when two columns aren't independent
 
+> **The short version:** [Correlated predicates](https://marlonribunal.com/sqlserver-demos/correlated-predicates/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 `WHERE City = 'Paris' AND Country = 'France'` matches every Paris row, because
 Paris is in France. The optimizer doesn't know that. It sees two predicates
 and has to guess how they overlap. This topic measures the guesses of both

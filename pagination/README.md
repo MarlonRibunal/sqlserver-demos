@@ -1,5 +1,7 @@
 # Pagination: OFFSET vs keyset
 
+> **The short version:** [Pagination: OFFSET vs keyset](https://marlonribunal.com/sqlserver-demos/pagination/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Every list screen pages, and most page with `OFFSET ... FETCH`. It's easy and
 works fine on page 1. This topic measures it on page 10,000, shows the rows
 it loses and repeats when the data moves under the reader, and compares it

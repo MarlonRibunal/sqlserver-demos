@@ -1,5 +1,7 @@
 # Key lookups and the tipping point
 
+> **The short version:** [Key lookups and the tipping point](https://marlonribunal.com/sqlserver-demos/tipping-point/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 When a nonclustered index finds the rows but doesn't hold every column the
 query needs, each row costs a **key lookup** into the clustered index. At some
 number of rows, the optimizer decides one scan of the whole table is cheaper

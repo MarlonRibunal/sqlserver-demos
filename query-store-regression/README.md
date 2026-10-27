@@ -1,5 +1,7 @@
 # Query Store: catching a plan regression, forcing the fix, and watching it break
 
+> **The short version:** [Query Store plan regressions](https://marlonribunal.com/sqlserver-demos/query-store-regression/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 A query that ran fine for months is suddenly slow, and nothing was deployed.
 Usually a plan was recompiled at an unlucky moment. Query Store records every
 plan a query has used and what each one cost, which makes this the one kind of

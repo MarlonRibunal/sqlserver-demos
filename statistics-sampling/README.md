@@ -1,5 +1,7 @@
 # Statistics sampling and skew
 
+> **The short version:** [Statistics sampling and skew](https://marlonribunal.com/sqlserver-demos/statistics-sampling/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Statistics are built from a sample unless you say otherwise, and a histogram
 has at most 200 steps no matter what. This topic measures, on 5,000,000 rows
 with deliberately skewed data, which estimates each of those limits gets

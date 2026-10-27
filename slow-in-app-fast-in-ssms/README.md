@@ -1,5 +1,7 @@
 # "Slow in the app, fast in SSMS": SET options and the plan cache
 
+> **The short version:** [Slow in the app, fast in SSMS](https://marlonribunal.com/sqlserver-demos/slow-in-app-fast-in-ssms/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 The most-asked question in SQL Server performance: a procedure is slow when
 the application calls it and instant when you paste the same call into SSMS.
 Four scenarios reproduce it in one session, show exactly why, and show why

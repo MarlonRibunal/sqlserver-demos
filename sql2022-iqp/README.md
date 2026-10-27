@@ -1,5 +1,7 @@
 # SQL Server 2022 query processing: plans that fix themselves, and how to tell
 
+> **The short version:** [SQL Server 2022 query processing](https://marlonribunal.com/sqlserver-demos/sql2022-iqp/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 SQL Server 2022 added features that change a query's plan with no change
 to its code: more than one cached plan for one statement, hints attached by
 the engine, memory grants corrected across restarts. When they work, a

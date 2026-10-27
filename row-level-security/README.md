@@ -1,5 +1,7 @@
 # Row-level security: what the filter stops, and what it doesn't
 
+> **The short version:** [Row-level security](https://marlonribunal.com/sqlserver-demos/row-level-security/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Row-level security (RLS) adds a predicate to every query on a table, so
 each tenant sees only its own rows. The filter does that. This topic runs a
 multi-tenant table the common way, with one application user and the

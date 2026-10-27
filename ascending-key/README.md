@@ -1,5 +1,7 @@
 # The ascending-key problem: estimates for rows the statistics haven't seen
 
+> **The short version:** [The ascending-key problem](https://marlonribunal.com/sqlserver-demos/ascending-key/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Five scenarios about the most ordinary way statistics go wrong. New rows land
 past the end of the histogram, the query that asks about them gets a guess,
 and the automatic update that should fix it is waiting for a threshold that a

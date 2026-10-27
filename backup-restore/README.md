@@ -1,5 +1,7 @@
 # Backup and restore: the restores you'll need, practised
 
+> **The short version:** [Backup and restore](https://marlonribunal.com/sqlserver-demos/backup-restore/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Everyone takes backups; few people practise the restores. This topic runs
 four of them for real against a demo database and counts what came back:
 point in time after an accidental `DELETE`, the tail of the log, the

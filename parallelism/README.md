@@ -1,5 +1,7 @@
 # Parallelism: what it buys, what it costs, and when it goes wrong
 
+> **The short version:** [Parallelism and CXPACKET](https://marlonribunal.com/sqlserver-demos/parallelism/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 A parallel plan splits one query across several threads. It's why a big
 report finishes in a quarter of the time, and why a server full of small
 queries runs out of CPU. It's also why `CXPACKET` tops so many wait-stats

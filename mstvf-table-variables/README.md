@@ -1,5 +1,7 @@
 # MSTVFs and table variables: the fixed guesses, and what replaced them
 
+> **The short version:** [MSTVFs and table variables](https://marlonribunal.com/sqlserver-demos/mstvf-table-variables/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Multi-statement table-valued functions (MSTVFs) and table variables have no
 statistics. For years the optimizer guessed their row counts with a
 constant: 1 row, or 100. Plans sized for a handful of rows then met

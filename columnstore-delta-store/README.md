@@ -1,5 +1,7 @@
 # Columnstore: the delta store, and the rowgroups a query can skip
 
+> **The short version:** [Columnstore and the delta store](https://marlonribunal.com/sqlserver-demos/columnstore-delta-store/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 A clustered columnstore index is only columnstore once its rows are
 compressed. Until then they sit in a **delta store**: an ordinary rowstore,
 uncompressed, read row by row. Four scenarios measure how rows end up there,

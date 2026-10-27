@@ -1,5 +1,7 @@
 # Optional parameter plans: SQL Server 2025's answer to the catch-all query
 
+> **The short version:** [Optional parameter plans (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optional-parameter-plans/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 `WHERE (@p IS NULL OR col = @p)` is the most common way to write a search
 screen, and for years it has meant one plan for every combination of
 supplied and missing parameters (see [catch-all queries](../catch-all-queries/)).

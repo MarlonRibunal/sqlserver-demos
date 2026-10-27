@@ -1,5 +1,7 @@
 # tempdb: when to reach for a `#temp` table, and when to refuse
 
+> **The short version:** [tempdb and #temp tables](https://marlonribunal.com/sqlserver-demos/tempdb/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Six scenarios that measure what a `#temp` table actually buys you, what it
 costs, and which of the folklore around it survives contact with a running
 instance.

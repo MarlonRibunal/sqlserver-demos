@@ -1,5 +1,7 @@
 # Lock escalation: the threshold, and what does and doesn't avoid it
 
+> **The short version:** [Lock escalation](https://marlonribunal.com/sqlserver-demos/lock-escalation/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 When a statement takes enough row locks, SQL Server swaps them for a single
 lock on the whole table. It's cheaper for the lock manager, and every other
 session is locked out of every row until the transaction ends. Five scenarios

@@ -1,5 +1,7 @@
 # Non-SARGable predicates: which functions on a column cost a seek
 
+> **The short version:** [Non-SARGable predicates](https://marlonribunal.com/sqlserver-demos/non-sargable-predicates/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Twenty-one queries that measure the rule everyone half-remembers: "don't wrap
 the column in a function." Most of the time it holds, at up to 300× the reads.
 `CAST(col AS date)` is the famous exception, and it still pays in a way the

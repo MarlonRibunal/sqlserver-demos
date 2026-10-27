@@ -1,5 +1,7 @@
 # Minimal logging: when bulk inserts really are cheap
 
+> **The short version:** [Minimal logging](https://marlonribunal.com/sqlserver-demos/minimal-logging/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 "Use `TABLOCK` and the insert is minimally logged." Sometimes. This topic
 loads the same 200,000 rows (43 MB) seven ways under each recovery model, and
 measures exactly what each load writes to the transaction log, from the

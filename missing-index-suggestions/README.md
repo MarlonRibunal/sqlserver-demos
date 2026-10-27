@@ -1,5 +1,7 @@
 # Missing-index suggestions: what the DMVs ask for, and what to build instead
 
+> **The short version:** [Missing-index suggestions](https://marlonribunal.com/sqlserver-demos/missing-index-suggestions/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 "Just create the indexes the missing-index DMVs suggest." This topic runs a
 six-query workload against a table with no nonclustered indexes, captures
 exactly what the DMVs suggest, and measures that design against three indexes

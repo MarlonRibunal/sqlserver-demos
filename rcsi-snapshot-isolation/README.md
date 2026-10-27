@@ -1,5 +1,7 @@
 # RCSI and snapshot isolation: readers, writers, and the version store
 
+> **The short version:** [RCSI and snapshot isolation](https://marlonribunal.com/sqlserver-demos/rcsi-snapshot-isolation/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Under the default isolation level, a reader waits for a writer. `NOLOCK`
 "fixes" that by reading data that may never have existed. Read Committed
 Snapshot Isolation (RCSI) fixes it properly. Snapshot isolation goes further,

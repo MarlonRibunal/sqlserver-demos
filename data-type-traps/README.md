@@ -1,5 +1,7 @@
 # Data type traps: wrong answers without an error
 
+> **The short version:** [Data type traps](https://marlonribunal.com/sqlserver-demos/data-type-traps/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 The bugs in this topic don't fail. A total comes out a fraction off; a
 report is missing a day; a date is read as the 2nd of January; a Japanese
 name is stored as `??`. Each one is a data type doing exactly what it's

@@ -1,5 +1,7 @@
 # Implicit conversions: when a type mismatch costs a scan, and when it doesn't
 
+> **The short version:** [Implicit conversions](https://marlonribunal.com/sqlserver-demos/implicit-conversion/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Fifteen queries that check one of the most repeated pieces of performance
 advice: "a `CONVERT_IMPLICIT` in the plan means an index scan." Sometimes it
 does, 300 times over. Usually it doesn't. The difference comes down to which

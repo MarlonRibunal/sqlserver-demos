@@ -1,5 +1,7 @@
 # Upsert race conditions: IF EXISTS, MERGE, and the locks that make them safe
 
+> **The short version:** [Upsert race conditions](https://marlonribunal.com/sqlserver-demos/upsert-race-conditions/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 "Update the row if it's there, insert it if it isn't" is one of the most
 common things an application asks of a database, and the most common way to
 write it is wrong under concurrency. It passes every test with one user. Under

@@ -1,5 +1,7 @@
 # Partition elimination traps
 
+> **The short version:** [Partition elimination](https://marlonribunal.com/sqlserver-demos/partition-elimination/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Partitioning a table by date promises that a query for one month reads one
 month. This topic counts the partitions each query actually opens, and finds
 three ways to lose that promise without the query looking any different,

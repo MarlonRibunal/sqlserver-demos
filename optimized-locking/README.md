@@ -1,5 +1,7 @@
 # Optimized locking: fewer locks, less blocking, and what still waits
 
+> **The short version:** [Optimized locking (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optimized-locking/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 SQL Server 2025's optimized locking changes how writers lock. An updated
 row is protected by its transaction's ID instead of a row lock held to the
 end. Under `READ_COMMITTED_SNAPSHOT`, an `UPDATE` checks its `WHERE`

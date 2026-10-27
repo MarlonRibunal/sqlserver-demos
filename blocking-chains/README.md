@@ -1,5 +1,7 @@
 # Blocking chains: finding the head, and why the DMVs blame the wrong session
 
+> **The short version:** [Blocking chains](https://marlonribunal.com/sqlserver-demos/blocking-chains/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 "The database is slow" is very often one session holding a lock and doing
 nothing, with a queue of sessions behind it, and more behind those. This topic
 builds a real chain with four background sessions, finds its head the way you

@@ -1,5 +1,7 @@
 # Parameter sniffing, `RECOMPILE`, and memory grant feedback
 
+> **The short version:** [Parameter sniffing](https://marlonribunal.com/sqlserver-demos/parameter-sniffing/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 **Sample database:** WideWorldImporters · **Min. version:** SQL Server 2017
 (2019+ for scenario C, 2022+ for E and F) · **Status:** tested in a limited,
 controlled environment — [see below](#status)

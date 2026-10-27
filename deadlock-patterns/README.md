@@ -1,5 +1,7 @@
 # Deadlock patterns: making them on cue, fixing them, and reading the graphs
 
+> **The short version:** [Deadlock patterns](https://marlonribunal.com/sqlserver-demos/deadlock-patterns/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 `Msg 1205: Transaction was deadlocked on lock resources with another process
 and has been chosen as the deadlock victim.` Most deadlocks in real systems
 are one of a handful of patterns. This topic makes each one happen on cue

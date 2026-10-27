@@ -1,5 +1,7 @@
 # Index fragmentation: what it costs, and what it doesn't
 
+> **The short version:** [Index fragmentation](https://marlonribunal.com/sqlserver-demos/index-fragmentation/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Six scenarios that separate the two things "fragmentation" lumps together. They
 show that the number most maintenance jobs act on doesn't predict what your
 queries pay.

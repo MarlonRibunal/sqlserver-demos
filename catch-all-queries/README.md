@@ -1,5 +1,7 @@
 # Catch-all queries: optional parameters, five ways
 
+> **The short version:** [Catch-all queries](https://marlonribunal.com/sqlserver-demos/catch-all-queries/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 Every application has a search screen with optional filters, and every
 database behind one has a procedure like this:
 

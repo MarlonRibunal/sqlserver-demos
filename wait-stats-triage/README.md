@@ -1,5 +1,7 @@
 # Wait stats triage: where the time went
 
+> **The short version:** [Wait stats triage](https://marlonribunal.com/sqlserver-demos/wait-stats-triage/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 When a query is slow, wait statistics say what it was waiting *for*: a
 lock, the log, the disk, a CPU. This topic makes each kind of wait happen
 on purpose and measures it in the session that waited. It also shows where

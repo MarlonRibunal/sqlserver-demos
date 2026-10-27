@@ -1,5 +1,7 @@
 # Data compression: ROW, PAGE, columnstore, and COMPRESS()
 
+> **The short version:** [Data compression](https://marlonribunal.com/sqlserver-demos/data-compression/) on marlonribunal.com covers the symptoms, the cause and the fixes on one page, with a query to check your own server.
+
 "Turn on PAGE compression" is the usual answer to a database that's too big
 or a scan that reads too much. Often it's the right one. This topic
 compresses the same million rows every way SQL Server offers and measures
