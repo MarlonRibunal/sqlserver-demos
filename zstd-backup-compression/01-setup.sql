@@ -141,11 +141,16 @@ BEGIN
     EXEC (N'BACKUP DATABASE ' + @Database + N' TO DISK = N''' + @path + N''' WITH INIT, FORMAT, ' + @Option + N';');
     SET @Ms = DATEDIFF(ms, @t0, SYSDATETIME());
 
-    SELECT TOP (1) @Bytes = bs.compressed_backup_size, @Algorithm = ISNULL(bs.compression_algorithm, N'none')
+    -- backupset.compression_algorithm exists from SQL Server 2022, so this is
+    -- dynamic SQL: a static reference fails to compile on 2019.
+    EXEC sys.sp_executesql N'
+    SELECT TOP (1) @Bytes = bs.compressed_backup_size, @Algorithm = ISNULL(bs.compression_algorithm, N''none'')
     FROM   msdb.dbo.backupset AS bs
     JOIN   msdb.dbo.backupmediafamily AS mf ON mf.media_set_id = bs.media_set_id
     WHERE  mf.physical_device_name = @path
-    ORDER BY bs.backup_set_id DESC;
+    ORDER BY bs.backup_set_id DESC;',
+         N'@path nvarchar(400), @Bytes bigint OUTPUT, @Algorithm nvarchar(40) OUTPUT',
+         @path = @path, @Bytes = @Bytes OUTPUT, @Algorithm = @Algorithm OUTPUT;
 END
 GO
 

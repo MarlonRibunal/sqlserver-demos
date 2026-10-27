@@ -92,12 +92,13 @@ BEGIN
     ('A', 'the higher the level, the smaller the backup',
      'LOW ' + CAST(@bL AS varchar(20)) + ', MEDIUM ' + CAST(@bM AS varchar(20)) + ', HIGH ' + CAST(@bH AS varchar(20)) + ' bytes',
      CASE WHEN @bH <= @bM AND @bM <= @bL THEN 'CONFIRMED' ELSE 'unexpected' END),
-    ('B', 'ZSTD LOW is no slower than MS_XPRESS (within 20%)',
-     'LOW ' + CAST(@tL AS varchar(20)) + ' ms, MS_XPRESS ' + CAST(@tX AS varchar(20)) + ' ms',
-     CASE WHEN @tX < 30 THEN 'INCONCLUSIVE' WHEN @tL * 10 <= @tX * 12 THEN 'CONFIRMED' ELSE 'unexpected' END),
-    ('B', 'HIGH costs time: at least half as long again as LOW',
-     'HIGH ' + CAST(@tH AS varchar(20)) + ' ms, LOW ' + CAST(@tL AS varchar(20)) + ' ms',
-     CASE WHEN @tL < 30 THEN 'INCONCLUSIVE' WHEN @tH * 2 >= @tL * 3 THEN 'CONFIRMED' ELSE 'unexpected' END);
+    -- Times are reported, not judged: they depend on the CPU and the disk.
+    -- On the emulated test container HIGH took three times as long as LOW;
+    -- on GitHub's native x64 runners the two took the same time.
+    ('B', 'backup time, ZSTD LOW against MS_XPRESS (depends on hardware)',
+     'LOW ' + CAST(@tL AS varchar(20)) + ' ms, MS_XPRESS ' + CAST(@tX AS varchar(20)) + ' ms', 'INFO'),
+    ('B', 'backup time, ZSTD HIGH against LOW (depends on hardware)',
+     'HIGH ' + CAST(@tH AS varchar(20)) + ' ms, LOW ' + CAST(@tL AS varchar(20)) + ' ms', 'INFO');
 END
 GO
 

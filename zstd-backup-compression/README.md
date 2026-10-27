@@ -68,9 +68,15 @@ best of three:
 | ZSTD `MEDIUM` | 11.5 MB | 90 ms |
 | ZSTD `HIGH` | **10.9 MB** | **281 ms** |
 
-**Every ZSTD level was smaller than MS_XPRESS**, and LOW was faster too: 20%
-smaller in a third less time. MEDIUM was a further 17% smaller for little more
+**Every ZSTD level was smaller than MS_XPRESS**, and on this container LOW
+was faster too: 20% smaller in a third less time. MEDIUM was a further 17% smaller for little more
 time. HIGH saved another 5% and took more than three times as long as LOW.
+
+**The times depend on the hardware; the sizes don't.** The table comes from
+the test container, which runs x64 SQL Server under emulation on an ARM
+Mac, so compression is expensive there. On GitHub's native x64 CI runners
+the same demo measured LOW 432 ms and HIGH 427 ms: the same time. The demo
+reports times as `INFO` and makes no claim about them.
 
 The backup-to-disk times here are tiny because the files land on the same
 fast disk. On a real server, writing less to the network or a backup
@@ -138,10 +144,12 @@ ZSTD for backups that might be restored on an older version.
 
 ## Takeaways
 
-1. **ZSTD LOW beat MS_XPRESS on both counts**: 13.8 MB against 17.3 MB, 83 ms
+1. **ZSTD LOW beat MS_XPRESS on size**: 13.8 MB against 17.3 MB;
+   on the test container on time as well, 83 ms
    against 122 ms.
-2. **MEDIUM is the middle ground**; HIGH saved 5% more than MEDIUM and took
-   three times as long.
+2. **MEDIUM is the middle ground**; HIGH saved 5% more than MEDIUM. Whether
+   it costs time depends on the hardware: three times as long as LOW on the
+   test container, the same on native x64.
 3. **Nothing compresses random, encrypted or already-compressed data.**
 4. **Switching a fixed backup file to ZSTD needs `WITH FORMAT`**, or the next
    backup fails with error 3098.
