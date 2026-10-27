@@ -100,6 +100,7 @@ fixes.
 **"The load is slow and the log is huge"**
 - bulk inserts that should be minimally logged → [minimal logging](minimal-logging/)
 - tempdb contention, or when to use a `#temp` table → [tempdb](tempdb/)
+- one query fills tempdb for everyone: cap it per workload group (SQL Server 2025) → [tempdb space governance](tempdb-space-governance/)
 
 ## Topics
 
@@ -149,6 +150,7 @@ fixes.
 | [ZSTD backup compression in SQL Server 2025: smaller, often faster, and one trap](zstd-backup-compression/) | none — creates its own | 2025 | [ZSTD backup compression (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/zstd-backup-compression/) |
 | [Blocking a query with ABORT_QUERY_EXECUTION: SQL Server 2025's kill switch](abort-query-execution/) | none — creates its own | 2025 | [Blocking a query with ABORT_QUERY_EXECUTION (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/abort-query-execution/) |
 | [New T-SQL syntax in SQL Server 2025: `\|\|`, PRODUCT, and the traps in them](tsql-2025-syntax/) | none — creates its own | 2025 | [New T-SQL syntax traps (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/tsql-2025-syntax/) |
+| [tempdb space governance in SQL Server 2025: capping tempdb per workload group](tempdb-space-governance/) | none — creates its own; **changes Resource Governor while it runs** | 2025 | [Capping tempdb with Resource Governor (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/tempdb-space-governance/) |
 
 **Min. version** is the oldest version on which every scenario runs. Where
 only some scenarios need a newer version, the column says which. On an older
@@ -184,7 +186,8 @@ If you're here to see what a specific release changed:
   [fuzzy string matching](fuzzy-string-matching/),
   [ZSTD backup compression](zstd-backup-compression/),
   [the ABORT_QUERY_EXECUTION hint](abort-query-execution/),
-  [new T-SQL syntax: `||`, `PRODUCT` and more](tsql-2025-syntax/)
+  [new T-SQL syntax: `||`, `PRODUCT` and more](tsql-2025-syntax/),
+  [tempdb space governance](tempdb-space-governance/)
 
 ## Running them
 
@@ -309,7 +312,9 @@ says why in comments.
 `DBCC FREEPROCCACHE`. Nothing here flushes an entire instance's plan cache.
 
 **Nothing runs against production.** Several topics change database-level
-settings by design. Use a scratch instance.
+settings by design, and [tempdb space governance](tempdb-space-governance/)
+changes Resource Governor for the whole instance while it runs, then puts
+it back. Use a scratch instance.
 
 ## Adding a topic
 
