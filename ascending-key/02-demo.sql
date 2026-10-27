@@ -361,7 +361,7 @@ DECLARE @ratio decimal(18,3) = @staleLegacy * 1.0 / NULLIF(@freshLegacy, 0);
 DECLARE @vRatio varchar(24) =
     CASE WHEN @ratio >= 2 AND @staleLegOp = 'Index Seek' THEN 'LOOKUPS COST MORE' ELSE 'unexpected' END;
 DECLARE @vSame varchar(24) =
-    CASE WHEN @staleNewOp = @freshNewOp THEN 'SAME PLAN' ELSE 'DIFFERENT PLAN' END;
+    CASE WHEN @staleNewOp = @freshNewOp THEN 'SAME PLAN' ELSE 'INTERMITTENT' END;  -- 6,300 sits close to the tipping point: CI once got the seek
 DECLARE @opText nvarchar(200) = N'stale: ' + @staleNewOp + N'; fresh: ' + @freshNewOp;
 
 EXEC Demo.usp_Record 'D. Cost', 1, 'legacy CE: stale reads / fresh reads', 'ratio', @ratio,
@@ -503,7 +503,7 @@ PRINT '=== 6. ANYTHING THAT DID NOT BEHAVE AS PREDICTED ===';
 GO
 SELECT Scenario, StepNo, Item, NumericValue, TextValue, Expected, Verdict
 FROM   Demo.DemoResults
-WHERE  Verdict IN ('unexpected', 'INCONCLUSIVE', 'sampled', 'DIFFERENT PLAN')
+WHERE  Verdict IN ('unexpected', 'INCONCLUSIVE', 'sampled', 'INTERMITTENT')
 ORDER BY ResultID;
 GO
 

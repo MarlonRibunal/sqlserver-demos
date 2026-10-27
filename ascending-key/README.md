@@ -171,6 +171,10 @@ databases still run the legacy estimator after an upgrade, because
 `LEGACY_CARDINALITY_ESTIMATION = ON` is a common way to undo upgrade
 regressions. Those databases get row 1.
 
+That 6,300 sits close to this query's tipping point. In one CI run on SQL
+Server 2025 RTM-CU10, the new estimator with stale statistics chose the seek
+instead. The demo reports that as `INTERMITTENT`, not as a failure.
+
 ### E — what actually refreshes the statistics
 
 Each step starts from the same stale state, applies one operation, then
