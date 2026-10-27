@@ -127,6 +127,26 @@ fixes.
 | [Optimized locking: fewer locks, less blocking, and what still waits](optimized-locking/) | none — creates its own | 2025 |
 | [Optional parameter plans: SQL Server 2025's answer to the catch-all query](optional-parameter-plans/) | none — creates its own | 2025 |
 
+**Min. version** is the oldest version on which every scenario runs. Where
+only some scenarios need a newer version, the column says which. On an older
+instance the scripts still run without error, and each scenario they can't
+run is reported as `SKIPPED` rather than failing.
+
+### By version
+
+If you're here to see what a specific release changed:
+
+- **SQL Server 2019**: [scalar UDF inlining](scalar-udf-inlining/),
+  [table variable deferred compilation](mstvf-table-variables/),
+  [Accelerated Database Recovery](accelerated-database-recovery/), row-mode
+  [memory grant feedback](memory-grant-declared-width/)
+- **SQL Server 2022**: [parameter-sensitive plans, CE feedback, DOP
+  feedback](sql2022-iqp/),
+  [memory grant feedback that persists](memory-grant-declared-width/),
+  [Query Store hints](query-store-regression/)
+- **SQL Server 2025**: [optimized locking](optimized-locking/),
+  [optional parameter plan optimization](optional-parameter-plans/)
+
 ## Running them
 
 The fastest way to a scratch instance is the `docker-compose.yml` in this
@@ -153,15 +173,41 @@ behaviour the README describes really happened on that instance. It isn't
 just "the script ran". It defaults to the `sqldemo-2022` container. Pass
 another container name as a second argument, or set `SQL_CONTAINER`.
 
-Prefer SSMS or Azure Data Studio? Open each script and run it whole (F5).
-Every README says what to expect.
+- The `sa` password comes from `MSSQL_SA_PASSWORD`, or failing that from the
+  container's own environment.
+- A passing run deletes its output. Set `KEEP_OUTPUT=1` to keep it. A WARN
+  or FAIL always keeps it, and prints where it is.
+- Exit status: `0` passed (with or without warnings), `1` failed,
+  `2` skipped (`.ci-skip`), `3` could not run (no container, no password,
+  instance not ready).
+
+`tools/run-all.sh [container]` runs every topic in alphabetical order and
+ends with a one-line tally: passed, passed with warnings, skipped, failed. It
+exits non-zero only if a topic failed.
+
+Prefer SSMS or Azure Data Studio? Connect to `localhost` on the container's
+host port, then open each script and run it whole (F5). Every README says
+what to expect.
+
+| Service | Container | Host port |
+|---|---|---|
+| `sql2019` | `sqldemo-2019` | 14319 |
+| `sql2022` | `sqldemo-2022` | 14322 |
+| `sql2025` | `sqldemo-2025` | 14325 |
+
+Nothing in the containers is persisted. `docker compose down` throws the
+instance away, which is what these demos assume.
 
 ### Continuous integration
 
 [`.github/workflows/demos.yml`](.github/workflows/demos.yml) runs every topic
-through `tools/run-topic.sh` on SQL Server 2019, 2022 and 2025, on every push.
-A topic that needs something the CI containers don't have, such as a sample
-database, has a `.ci-skip` file saying so.
+through `tools/run-topic.sh` on SQL Server 2019, 2022 and 2025, on every push
+to `main`, on pull requests, and on demand. Every topic runs on every version,
+including versions older than it needs, so CI also checks that a version-gated
+topic reports `SKIPPED` cleanly instead of failing. A topic that needs
+something the CI containers don't have has a `.ci-skip` file saying so.
+Today that's only [parameter sniffing](parameter-sniffing/), which needs
+WideWorldImporters.
 
 ## How these are built
 
@@ -222,10 +268,14 @@ settings by design. Use a scratch instance.
 4. End `02-demo.sql` with a result set headed
    `=== N. ANYTHING THAT DID NOT BEHAVE AS PREDICTED ===` that lists every
    check whose verdict was wrong. That is what `tools/run-topic.sh` and CI read.
-5. Run `tools/run-topic.sh <topic-name>` until it reports PASS, on every
+5. If a scenario needs a newer version than the oldest CI runs, check the
+   version first and report it as `SKIPPED` there. Don't let it error.
+6. Run `tools/run-topic.sh <topic-name>` until it reports PASS, on every
    version the topic claims to support.
-6. Add a row to the **Topics** table above.
-7. Note any client-specific requirements (SSMS settings, sqlcmd fallbacks) in
+7. Add a row to the **Topics** table above, an entry under
+   [Start from the symptom](#start-from-the-symptom), and, if it shows a
+   version-specific feature, a link under [By version](#by-version).
+8. Note any client-specific requirements (SSMS settings, sqlcmd fallbacks) in
    the topic README — not everyone runs SSMS.
 
 ## Sample databases
