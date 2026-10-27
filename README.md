@@ -43,6 +43,7 @@ fixes.
 - `REGEXP_LIKE` that scans, misestimates, or quietly misses rows (SQL Server 2025) → [regular expressions](regex-functions/)
 - a nearest-neighbour search over embeddings that reads every row, or a vector index that misses rows (SQL Server 2025) → [vector search](vector-search/)
 - finding misspelt names: `EDIT_DISTANCE`, Jaro-Winkler, `SOUNDEX` (SQL Server 2025) → [fuzzy string matching](fuzzy-string-matching/)
+- `||` returned NULL, `'total=' || 1 + 2` failed, or a product came out as 3628800.0000000084 (SQL Server 2025) → [new T-SQL syntax traps](tsql-2025-syntax/)
 
 **"The estimates in the plan are nowhere near the actual rows"**
 - rows newer than the statistics → [ascending key](ascending-key/)
@@ -147,6 +148,7 @@ fixes.
 | [Fuzzy string matching in SQL Server 2025: EDIT_DISTANCE, Jaro-Winkler, and SOUNDEX](fuzzy-string-matching/) | none — creates its own | 2025 | [Fuzzy string matching (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/fuzzy-string-matching/) |
 | [ZSTD backup compression in SQL Server 2025: smaller, often faster, and one trap](zstd-backup-compression/) | none — creates its own | 2025 | [ZSTD backup compression (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/zstd-backup-compression/) |
 | [Blocking a query with ABORT_QUERY_EXECUTION: SQL Server 2025's kill switch](abort-query-execution/) | none — creates its own | 2025 | [Blocking a query with ABORT_QUERY_EXECUTION (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/abort-query-execution/) |
+| [New T-SQL syntax in SQL Server 2025: `\|\|`, PRODUCT, and the traps in them](tsql-2025-syntax/) | none — creates its own | 2025 | [New T-SQL syntax traps (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/tsql-2025-syntax/) |
 
 **Min. version** is the oldest version on which every scenario runs. Where
 only some scenarios need a newer version, the column says which. On an older
@@ -181,7 +183,8 @@ If you're here to see what a specific release changed:
   [vector search](vector-search/),
   [fuzzy string matching](fuzzy-string-matching/),
   [ZSTD backup compression](zstd-backup-compression/),
-  [the ABORT_QUERY_EXECUTION hint](abort-query-execution/)
+  [the ABORT_QUERY_EXECUTION hint](abort-query-execution/),
+  [new T-SQL syntax: `||`, `PRODUCT` and more](tsql-2025-syntax/)
 
 ## Running them
 
