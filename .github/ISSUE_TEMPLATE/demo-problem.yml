@@ -1,0 +1,45 @@
+name: A demo didn't behave as its README says
+description: An error, a FAIL or WARN from tools/run-topic.sh, or numbers far from the README's.
+labels: [demo-problem]
+body:
+  - type: input
+    id: topic
+    attributes:
+      label: Topic
+      description: The folder name, e.g. parameter-sniffing
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: SELECT @@VERSION;
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How you ran it
+      options:
+        - tools/run-topic.sh against a docker-compose container
+        - tools/run-topic.sh against another container
+        - SSMS or Azure Data Studio
+        - sqlcmd
+        - Other (say below)
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What happened
+      description: >
+        The PASS/WARN/FAIL line, any error message, and the rows of the demo's
+        final "ANYTHING THAT DID NOT BEHAVE AS PREDICTED" result set.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Anything unusual about the instance
+      description: Cores, memory, non-default settings, Docker on Apple Silicon, Azure, etc.

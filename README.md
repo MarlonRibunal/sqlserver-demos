@@ -1,5 +1,6 @@
 # SQL Server demo scripts
 
+[![demos](https://github.com/MarlonRibunal/sqlserver-demos/actions/workflows/demos.yml/badge.svg?branch=main)](https://github.com/MarlonRibunal/sqlserver-demos/actions/workflows/demos.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Self-contained, runnable demonstrations of SQL Server behaviour — one folder per
@@ -132,6 +133,15 @@ only some scenarios need a newer version, the column says which. On an older
 instance the scripts still run without error, and each scenario they can't
 run is reported as `SKIPPED` rather than failing.
 
+**What has actually been tested.** Every topic was developed on SQL Server
+2022 CU25, and CI runs every topic on 2019, 2022 and 2025 on each push. A
+minimum of 2016 or 2017 comes from when the feature was introduced, according
+to Microsoft's documentation. Nothing here has been run on 2016 or 2017.
+
+**Azure SQL Database and Azure SQL Managed Instance are not tested.** Many
+demos would need changes there. Most create and drop their own database, and
+several take backups to local disk. Azure SQL Database allows neither.
+
 ### By version
 
 If you're here to see what a specific release changed:
@@ -197,6 +207,22 @@ what to expect.
 
 Nothing in the containers is persisted. `docker compose down` throws the
 instance away, which is what these demos assume.
+
+### Platform notes
+
+- **Apple Silicon (M-series Macs).** The SQL Server images are x64 only. In
+  Docker Desktop, turn on *Use Rosetta for x86_64/amd64 emulation on Apple
+  Silicon* (Settings → General). The demos run under emulation, but more
+  slowly, so timings and some CPU-based numbers will differ from the READMEs.
+  None of the demos has been tested under emulation.
+- **Windows.** The `tools/` scripts are bash. Run them from WSL 2, with Docker
+  Desktop's WSL integration on, or from Git Bash. Or skip the scripts and
+  run each `.sql` file from SSMS.
+- **Memory.** Give each container about 2 GB. Running all three side by side
+  takes about 6 GB of Docker's memory allowance.
+- **Your own instance.** Not using Docker? Run the scripts in order from SSMS,
+  Azure Data Studio or `sqlcmd -I` (`QUOTED_IDENTIFIER ON`, which several
+  demos need). `tools/run-topic.sh` only drives containers.
 
 ### Continuous integration
 
@@ -295,6 +321,21 @@ is generated with near-uniform distributions, so it can't show data skew), the
 setup script manufactures the conditions **deliberately and says so** in
 comments. A demo that admits what it constructed is worth more than one claiming
 to have found it in the wild.
+
+## Found a problem?
+
+[Open an issue](https://github.com/MarlonRibunal/sqlserver-demos/issues/new/choose).
+A demo that doesn't behave as its README says is exactly what's worth
+reporting. Please include:
+
+- the output of `SELECT @@VERSION;`
+- the topic, and the `PASS`/`WARN`/`FAIL` line from `tools/run-topic.sh` if
+  you used it
+- the rows of the demo's final "ANYTHING THAT DID NOT BEHAVE AS PREDICTED"
+  result set. With `run-topic.sh`, a WARN or FAIL keeps the full output in the
+  folder it prints.
+- anything unusual about the instance: core count, memory, non-default
+  settings, Docker on Apple Silicon
 
 ## Disclaimer
 
