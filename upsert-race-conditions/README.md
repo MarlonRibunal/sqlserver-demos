@@ -228,3 +228,7 @@ WITHOUT WARRANTY OF ANY KIND, express or implied, and shall not be liable for
 any claim, damages, data loss, service interruption, or other liability arising
 from or in connection with their use. See the
 [full disclaimer](../README.md#disclaimer).
+
+These scripts and this README were written with the help of AI. The results
+come from running the scripts on SQL Server, not from the AI. See
+[how this was made](../README.md#how-this-was-made).

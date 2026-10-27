@@ -11,6 +11,10 @@ Every topic also has a short explainer on my blog: what the problem looks like,
 why it happens, what fixes it, and a query to check your own server. Browse them
 all at **[SQL Server Demos on marlonribunal.com](https://marlonribunal.com/sqlserver-demos/)**.
 
+> **Built with AI assistance.** The scripts, READMEs and explainers were written
+> with the help of AI. Every result in them comes from actually running the demos
+> on SQL Server, not from the AI. See [how this was made](#how-this-was-made).
+
 ## Start from the symptom
 
 You probably arrived with a problem, not a feature name. Find it below; each
@@ -340,6 +344,24 @@ reporting. Please include:
   folder it prints.
 - anything unusual about the instance: core count, memory, non-default
   settings, Docker on Apple Silicon
+
+## How this was made
+
+I built this repository with the help of AI: an AI coding assistant (Claude)
+helped write the scripts, the READMEs and the explainer pages, under my
+direction.
+
+What keeps it honest is that nothing here is taken on the AI's word:
+
+- every demo runs against a real SQL Server instance and ends by listing
+  anything that did not behave as its README predicts
+- continuous integration re-runs every topic on SQL Server 2019, 2022 and 2025
+  on every push
+- every number in a README or explainer was copied from a real run, and each
+  README names the build it was measured on
+
+If you find something that's wrong anyway, please
+[open an issue](https://github.com/MarlonRibunal/sqlserver-demos/issues/new/choose).
 
 ## Disclaimer
 
