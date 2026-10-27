@@ -90,6 +90,7 @@ fixes.
 
 **"Someone deleted the wrong rows" / "will our backups actually restore?"**
 - point-in-time restore to a copy, the tail-log backup, `COPY_ONLY` and broken differentials, checksums → [backup and restore](backup-restore/)
+- backups too big or too slow, and ZSTD compression on SQL Server 2025 → [ZSTD backup compression](zstd-backup-compression/)
 
 **"The transaction log is full" / "the log file won't stop growing"**
 - no log backups, an open transaction, a shrink that won't shrink, thousands of VLFs → [why is my transaction log full?](transaction-log-full/)
@@ -143,6 +144,7 @@ fixes.
 | [Regular expressions in SQL Server 2025: REGEXP_LIKE against LIKE](regex-functions/) | none — creates its own | 2025 | [Regular expressions (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/regex-functions/) |
 | [Vector search in SQL Server 2025: exact, approximate, and the catches](vector-search/) | none — creates its own | 2025 | [Vector search (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/vector-search/) |
 | [Fuzzy string matching in SQL Server 2025: EDIT_DISTANCE, Jaro-Winkler, and SOUNDEX](fuzzy-string-matching/) | none — creates its own | 2025 | [Fuzzy string matching (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/fuzzy-string-matching/) |
+| [ZSTD backup compression in SQL Server 2025: smaller, often faster, and one trap](zstd-backup-compression/) | none — creates its own | 2025 | [ZSTD backup compression (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/zstd-backup-compression/) |
 
 **Min. version** is the oldest version on which every scenario runs. Where
 only some scenarios need a newer version, the column says which. On an older
@@ -175,7 +177,8 @@ If you're here to see what a specific release changed:
   [the json data type and JSON indexes](json-native-type/),
   [regular expressions](regex-functions/),
   [vector search](vector-search/),
-  [fuzzy string matching](fuzzy-string-matching/)
+  [fuzzy string matching](fuzzy-string-matching/),
+  [ZSTD backup compression](zstd-backup-compression/)
 
 ## Running them
 
