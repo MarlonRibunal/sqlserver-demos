@@ -25,6 +25,7 @@ fixes.
 - the plan was compiled for somebody else's parameter → [parameter sniffing](parameter-sniffing/)
 - only for the newest data → [the ascending-key problem](ascending-key/)
 - "slow in the app, fast in SSMS" → [SET options and the plan cache](slow-in-app-fast-in-ssms/)
+- a filtered index that's used in SSMS but not from the application, or error 1934 on writes → [filtered indexes](filtered-index/)
 - a search screen with optional filters → [catch-all queries](catch-all-queries/)
 - the same, on SQL Server 2025: what optional parameter plan optimization fixes, and where it stops → [optional parameter plans](optional-parameter-plans/)
 - it was fine yesterday and nothing was deployed → [Query Store: plan regressions](query-store-regression/)
@@ -144,6 +145,7 @@ fixes.
 | [MSTVFs and table variables: the fixed guesses, and what replaced them](mstvf-table-variables/) | none — creates its own | 2019 | [MSTVFs and table variables](https://marlonribunal.com/sqlserver-demos/mstvf-table-variables/) |
 | [Wait stats triage: where the time went](wait-stats-triage/) | none — creates its own | 2017 | [Wait stats triage](https://marlonribunal.com/sqlserver-demos/wait-stats-triage/) |
 | [Untrusted constraints: enabled, but not trusted, and the plans that costs](untrusted-constraints/) | none — creates its own | 2016 | [Untrusted foreign keys and CHECK constraints](https://marlonribunal.com/sqlserver-demos/untrusted-constraints/) |
+| [Filtered indexes: when they're used, when they're ignored, and the writes they break](filtered-index/) | none — creates its own | 2016 | [Filtered indexes: why yours isn't used](https://marlonribunal.com/sqlserver-demos/filtered-index/) |
 | [SQL Server 2022 query processing: plans that fix themselves, and how to tell](sql2022-iqp/) | none — creates its own | 2022 | [SQL Server 2022 query processing](https://marlonribunal.com/sqlserver-demos/sql2022-iqp/) |
 | [Optimized locking: fewer locks, less blocking, and what still waits](optimized-locking/) | none — creates its own | 2025 | [Optimized locking (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optimized-locking/) |
 | [Optional parameter plans: SQL Server 2025's answer to the catch-all query](optional-parameter-plans/) | none — creates its own | 2025 | [Optional parameter plans (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optional-parameter-plans/) |
