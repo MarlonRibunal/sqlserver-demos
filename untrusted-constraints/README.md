@@ -136,8 +136,9 @@ Run inside a transaction, so the locks can be read before they're released:
 | `Demo.Customers` | **Sch-M** |
 
 Validating 500,000 orders took 4,067 logical reads. A schema modification
-lock blocks every query on both tables, including reads under `NOLOCK`,
-until it finishes. On a large table, re-trust in a maintenance window.
+lock blocks every query on both tables until it finishes; by Microsoft's
+documentation that includes reads under `NOLOCK`, which this demo doesn't
+measure. On a large table, re-trust in a maintenance window.
 
 ## How to read the output
 
