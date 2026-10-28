@@ -60,6 +60,7 @@ fixes.
 
 **"The server is slow and I don't know where to start" / "what are we waiting on?"**
 - elapsed = CPU + waits, per-session and live waits, `WRITELOG`, `PAGEIOLATCH`, `LCK_M_*`, `SOS_SCHEDULER_YIELD`, and the instance-wide numbers' noise → [wait stats triage](wait-stats-triage/)
+- thousands of single-use plans in the plan cache, high compilations → [plan cache bloat](plan-cache-bloat/)
 
 **"Queries wait for memory" (`RESOURCE_SEMAPHORE`)**
 - grants far bigger than the data → [memory grants sized by declared width](memory-grant-declared-width/)
@@ -146,6 +147,7 @@ fixes.
 | [Wait stats triage: where the time went](wait-stats-triage/) | none — creates its own | 2017 | [Wait stats triage](https://marlonribunal.com/sqlserver-demos/wait-stats-triage/) |
 | [Untrusted constraints: enabled, but not trusted, and the plans that costs](untrusted-constraints/) | none — creates its own | 2016 | [Untrusted foreign keys and CHECK constraints](https://marlonribunal.com/sqlserver-demos/untrusted-constraints/) |
 | [Filtered indexes: when they're used, when they're ignored, and the writes they break](filtered-index/) | none — creates its own | 2016 | [Filtered indexes: why yours isn't used](https://marlonribunal.com/sqlserver-demos/filtered-index/) |
+| [Plan cache bloat: single-use plans, and what each fix leaves behind](plan-cache-bloat/) | none — creates its own; **changes `optimize for ad hoc workloads` while it runs** | 2017 | [Plan cache bloat from ad hoc queries](https://marlonribunal.com/sqlserver-demos/plan-cache-bloat/) |
 | [SQL Server 2022 query processing: plans that fix themselves, and how to tell](sql2022-iqp/) | none — creates its own | 2022 | [SQL Server 2022 query processing](https://marlonribunal.com/sqlserver-demos/sql2022-iqp/) |
 | [Optimized locking: fewer locks, less blocking, and what still waits](optimized-locking/) | none — creates its own | 2025 | [Optimized locking (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optimized-locking/) |
 | [Optional parameter plans: SQL Server 2025's answer to the catch-all query](optional-parameter-plans/) | none — creates its own | 2025 | [Optional parameter plans (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optional-parameter-plans/) |
@@ -316,13 +318,16 @@ for a demo is fair; clearing the query history that was already in it is not.
 Where a demo could take a destructive shortcut, it takes the longer route and
 says why in comments.
 
-**Object-scoped cache operations only** — `sp_recompile`, never
+**Object-scoped cache operations only** — `sp_recompile`, or
+`DBCC FREEPROCCACHE` with a single plan handle ([plan cache
+bloat](plan-cache-bloat/) removes its own plans that way), never a bare
 `DBCC FREEPROCCACHE`. Nothing here flushes an entire instance's plan cache.
 
 **Nothing runs against production.** Several topics change database-level
 settings by design, and [tempdb space governance](tempdb-space-governance/)
 changes Resource Governor for the whole instance while it runs, then puts
-it back. Use a scratch instance.
+it back; [plan cache bloat](plan-cache-bloat/) does the same with `optimize
+for ad hoc workloads`. Use a scratch instance.
 
 ## Adding a topic
 
