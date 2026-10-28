@@ -39,6 +39,7 @@ fixes.
 - a date-partitioned table and the query reads every partition → [partition elimination](partition-elimination/)
 - a heap that keeps getting slower to scan → [forwarded records](heap-forwarded-records/)
 - a columnstore table that isn't as fast or small as it should be → [the delta store](columnstore-delta-store/)
+- a join to a table the query takes no columns from, or a filter a `CHECK` constraint rules out, still reads the table → [untrusted constraints](untrusted-constraints/)
 - a columnstore range query that reads every rowgroup: `ORDER`, MAXDOP, and loads after the build (SQL Server 2022, 2025) → [ordered columnstore](ordered-columnstore/)
 - filtering on a property inside JSON, or a JSON index that isn't used (SQL Server 2025) → [the json data type](json-native-type/)
 - `REGEXP_LIKE` that scans, misestimates, or quietly misses rows (SQL Server 2025) → [regular expressions](regex-functions/)
@@ -142,6 +143,7 @@ fixes.
 | [Row-level security: what the filter stops, and what it doesn't](row-level-security/) | none — creates its own | 2016 SP1 | [Row-level security](https://marlonribunal.com/sqlserver-demos/row-level-security/) |
 | [MSTVFs and table variables: the fixed guesses, and what replaced them](mstvf-table-variables/) | none — creates its own | 2019 | [MSTVFs and table variables](https://marlonribunal.com/sqlserver-demos/mstvf-table-variables/) |
 | [Wait stats triage: where the time went](wait-stats-triage/) | none — creates its own | 2017 | [Wait stats triage](https://marlonribunal.com/sqlserver-demos/wait-stats-triage/) |
+| [Untrusted constraints: enabled, but not trusted, and the plans that costs](untrusted-constraints/) | none — creates its own | 2016 | [Untrusted foreign keys and CHECK constraints](https://marlonribunal.com/sqlserver-demos/untrusted-constraints/) |
 | [SQL Server 2022 query processing: plans that fix themselves, and how to tell](sql2022-iqp/) | none — creates its own | 2022 | [SQL Server 2022 query processing](https://marlonribunal.com/sqlserver-demos/sql2022-iqp/) |
 | [Optimized locking: fewer locks, less blocking, and what still waits](optimized-locking/) | none — creates its own | 2025 | [Optimized locking (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optimized-locking/) |
 | [Optional parameter plans: SQL Server 2025's answer to the catch-all query](optional-parameter-plans/) | none — creates its own | 2025 | [Optional parameter plans (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optional-parameter-plans/) |
