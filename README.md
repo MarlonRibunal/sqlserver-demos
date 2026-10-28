@@ -55,6 +55,9 @@ fixes.
 - a `#temp` table vs a table variable → [tempdb](tempdb/)
 - a multi-statement function estimated at 1 or 100 rows, a table variable estimated at 1 → [MSTVFs and table variables](mstvf-table-variables/)
 
+**"Half the transaction was saved" / "the job succeeded but the work is missing"**
+- `XACT_ABORT`, `TRY`/`CATCH`, doomed transactions, errors `CATCH` can't see, `RAISERROR` vs `THROW`, a trigger written for one row → [error handling](error-handling/)
+
 **"The totals are off by a cent" / "the report is missing a day" / "the dates are swapped"**
 - integer division, float, decimal and money rounding, strings cut short, datetime ranges, date formats, trailing spaces, identity overflow → [data type traps](data-type-traps/)
 
@@ -148,6 +151,7 @@ fixes.
 | [Untrusted constraints: enabled, but not trusted, and the plans that costs](untrusted-constraints/) | none — creates its own | 2016 | [Untrusted foreign keys and CHECK constraints](https://marlonribunal.com/sqlserver-demos/untrusted-constraints/) |
 | [Filtered indexes: when they're used, when they're ignored, and the writes they break](filtered-index/) | none — creates its own | 2016 | [Filtered indexes: why yours isn't used](https://marlonribunal.com/sqlserver-demos/filtered-index/) |
 | [Plan cache bloat: single-use plans, and what each fix leaves behind](plan-cache-bloat/) | none — creates its own; **changes `optimize for ad hoc workloads` while it runs** | 2017 | [Plan cache bloat from ad hoc queries](https://marlonribunal.com/sqlserver-demos/plan-cache-bloat/) |
+| [Error handling in T-SQL: XACT_ABORT, TRY/CATCH, and what an error leaves behind](error-handling/) | none — creates its own | 2017 | [T-SQL error handling: XACT_ABORT and TRY/CATCH](https://marlonribunal.com/sqlserver-demos/error-handling/) |
 | [SQL Server 2022 query processing: plans that fix themselves, and how to tell](sql2022-iqp/) | none — creates its own | 2022 | [SQL Server 2022 query processing](https://marlonribunal.com/sqlserver-demos/sql2022-iqp/) |
 | [Optimized locking: fewer locks, less blocking, and what still waits](optimized-locking/) | none — creates its own | 2025 | [Optimized locking (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optimized-locking/) |
 | [Optional parameter plans: SQL Server 2025's answer to the catch-all query](optional-parameter-plans/) | none — creates its own | 2025 | [Optional parameter plans (SQL Server 2025)](https://marlonribunal.com/sqlserver-demos/optional-parameter-plans/) |
